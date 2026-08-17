@@ -1,0 +1,1439 @@
+{% extends "base.html" %}
+
+{% block title %}Scrutiny Analyzer{% endblock %}
+{% block page_title %}Scrutiny Analyzer{% endblock %}
+{% block page_subtitle %}Audit tools for detecting duplicate entries, mismatches, and cash settlements{% endblock %}
+
+{% block content %}
+<!-- Tab Bar with Date Presets -->
+<div style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--surface-card); padding: 10px 14px; border-radius: 14px; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+    <div style="display: flex; gap: 6px; overflow-x: auto; flex: 1; padding: 2px 0;">
+        <button id="tabAll" class="scrutiny-tab-btn active" onclick="switchTab('all')">
+            🚀 Run All
+        </button>
+        <button id="tabReceipts" class="scrutiny-tab-btn" onclick="switchTab('receipts')">
+            💵 Receipts
+        </button>
+        <button id="tabDupes" class="scrutiny-tab-btn" onclick="switchTab('dupes')">
+            🔁 Duplicate Items
+        </button>
+        <button id="tabMismatch" class="scrutiny-tab-btn" onclick="switchTab('mismatch')">
+            ⚠️ Mismatches
+        </button>
+        <button id="tabCrossVoucher" class="scrutiny-tab-btn" onclick="switchTab('cross')">
+            📑 Cross-Vouchers
+        </button>
+        <button id="tabSettlement" class="scrutiny-tab-btn" onclick="switchTab('settlement')">
+            💳 Cash Settlements
+        </button>
+        <button id="tabMasters" class="scrutiny-tab-btn" onclick="switchTab('masters')">
+            🧑‍🤝‍🧑 Master Scrutiny
+        </button>
+    </div>
+    
+    <!-- Date Presets Pill Bar -->
+    <div class="date-filter-bar" style="display: flex; gap: 4px; align-items: center; background: var(--bg-body); padding: 4px; border-radius: 10px; border: 1px solid var(--border-color);">
+        <button type="button" class="preset-btn active" data-days="1" onclick="changeDaysRange(1, this)">1 Day</button>
+        <button type="button" class="preset-btn" data-days="3" onclick="changeDaysRange(3, this)">3 Day</button>
+        <button type="button" class="preset-btn" data-days="7" onclick="changeDaysRange(7, this)">7 Day</button>
+        <button type="button" class="preset-btn" data-days="15" onclick="changeDaysRange(15, this)">15 Day</button>
+        <button type="button" class="preset-btn" data-days="0" onclick="changeDaysRange(0, this)">Lifetime</button>
+    </div>
+</div>
+
+<style>
+.scrutiny-tab-btn {
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 7px 14px;
+    font-size: 12.5px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+.scrutiny-tab-btn:hover {
+    background: rgba(99, 102, 241, 0.08);
+    color: #6366f1;
+}
+.scrutiny-tab-btn.active {
+    background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+    box-shadow: 0 3px 10px rgba(99, 102, 241, 0.3);
+}
+.preset-btn {
+    padding: 4px 10px;
+    font-size: 11.5px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-light, #64748b);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.preset-btn.active {
+    background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+.preset-btn:hover:not(.active) {
+    background: rgba(0,0,0,0.05) !important;
+}
+
+.audit-card {
+    background: var(--surface-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    margin-bottom: 16px;
+}
+.audit-card-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+}
+.data-table th {
+    padding: 8px 14px !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    background: rgba(0,0,0,0.02) !important;
+}
+.data-table td {
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+    vertical-align: middle !important;
+}
+</style>
+
+<!-- Tab 0: Run All Scans Section (Overview Dashboard) -->
+<div id="sectionAll">
+    <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #2563eb 100%); padding: 18px 24px; border-radius: 14px; color: white; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 6px 18px rgba(79, 70, 229, 0.25);">
+        <div>
+            <h4 style="margin: 0 0 4px 0; font-size: 17px; font-weight: 700; color: #ffffff;">Automated Scrutiny Audits</h4>
+            <p style="margin: 0; font-size: 13px; color: rgba(255,255,255,0.85);">Run all 5 audit engines concurrently across the selected date range.</p>
+        </div>
+        <button id="runAllBtn" class="btn" onclick="runAllAudits()" style="height: 40px; background: #ffffff; color: #4f46e5; border: none; font-weight: 700; padding: 0 22px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; transition: all 0.2s;">
+            ⚡ Run All Audits
+        </button>
+    </div>
+
+    <!-- Stacked Cards for Audits -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+        <!-- Card 1: Receipt Duplicates -->
+        <div class="audit-card">
+            <div class="audit-card-header" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0.02));">
+                <h3 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #4f46e5; display: flex; align-items: center; gap: 6px;">💵 Receipt Duplicates</h3>
+                <span id="allReceiptsCount" class="badge badge-error" style="display: none;"></span>
+            </div>
+            <div class="table-container" style="max-height: 220px; overflow-y: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Party Name</th>
+                            <th style="text-align: right;">Amount</th>
+                            <th>Vch 1</th>
+                            <th>Date 1</th>
+                            <th>Vch 2</th>
+                            <th>Date 2</th>
+                            <th>Gap</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allReceiptsBody">
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: var(--text-light); padding: 25px; font-size: 13px;">Click "⚡ Run All Audits" to start scanning.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Card 2: Duplicate Items (Sales) -->
+        <div class="audit-card">
+            <div class="audit-card-header" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(168, 85, 247, 0.02));">
+                <h3 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #7c3aed; display: flex; align-items: center; gap: 6px;">🔁 Duplicate Items (Sales)</h3>
+                <span id="allDupesCount" class="badge badge-error" style="display: none;"></span>
+            </div>
+            <div class="table-container" style="max-height: 220px; overflow-y: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Voucher No</th>
+                            <th>Date</th>
+                            <th>Item Name</th>
+                            <th>Sr No.</th>
+                            <th>Qty</th>
+                            <th>Rate</th>
+                            <th>Amount</th>
+                            <th>Times Billed</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allDupesBody">
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: var(--text-light); padding: 25px; font-size: 13px;">Click "⚡ Run All Audits" to start scanning.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Card 3: Qty/Amount Mismatches -->
+        <div class="audit-card">
+            <div class="audit-card-header" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(249, 115, 22, 0.02));">
+                <h3 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #ea580c; display: flex; align-items: center; gap: 6px;">⚠️ Qty / Amount Mismatches</h3>
+                <span id="allMismatchCount" class="badge badge-warning" style="display: none;"></span>
+            </div>
+            <div class="table-container" style="max-height: 220px; overflow-y: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Voucher No</th>
+                            <th>Date</th>
+                            <th>Item Name</th>
+                            <th>Sr No.</th>
+                            <th>Qty</th>
+                            <th>Rate</th>
+                            <th>Amount</th>
+                            <th>Issue Type</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allMismatchBody">
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: var(--text-light); padding: 25px; font-size: 13px;">Click "⚡ Run All Audits" to start scanning.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Card 4: Cross-Voucher Duplicates -->
+        <div class="audit-card">
+            <div class="audit-card-header" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(14, 165, 233, 0.02));">
+                <h3 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #0284c7; display: flex; align-items: center; gap: 6px;">📑 Cross-Voucher Duplicates</h3>
+                <span id="allCrossCount" class="badge" style="display: none; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;"></span>
+            </div>
+            <div class="table-container" style="max-height: 220px; overflow-y: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Voucher 1</th>
+                            <th>Voucher 2</th>
+                            <th>Identical Items</th>
+                            <th>Matching Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allCrossBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-light); padding: 25px; font-size: 13px;">Click "⚡ Run All Audits" to start scanning.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Card 5: Settlement Scrutiny -->
+        <div class="audit-card">
+            <div class="audit-card-header" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.02));">
+                <h3 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #059669; display: flex; align-items: center; gap: 6px;">💳 Cash Settlement Scrutiny</h3>
+                <span id="allSettlementCount" class="badge badge-error" style="display: none;"></span>
+            </div>
+            <div class="table-container" style="max-height: 220px; overflow-y: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Voucher No</th>
+                            <th>Date</th>
+                            <th>Customer Name</th>
+                            <th class="text-right">Bill Amount</th>
+                            <th class="text-right">Cash Received</th>
+                            <th>Audit Flag</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allSettlementBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-light); padding: 25px; font-size: 13px;">Click "⚡ Run All Audits" to start scanning.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab 1: Receipt Duplicates Section -->
+<div id="sectionReceipts" style="display: none;">
+    <div style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); padding: 18px 24px; border-radius: 14px; color: white; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: space-between; box-shadow: 0 6px 18px rgba(79, 70, 229, 0.25);">
+        <div>
+            <h4 style="margin: 0 0 4px 0; font-size: 17px; font-weight: 700; color: #ffffff;">💵 Receipt Duplicates Audit</h4>
+            <p style="margin: 0; font-size: 13px; color: rgba(255,255,255,0.85);">Detects duplicate receipt vouchers created for the same party and amount within a tolerance gap.</p>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <div style="display: flex; flex-direction: column;">
+                <label style="font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.9); margin-bottom: 3px; text-transform: uppercase;">Days Gap</label>
+                <select id="daysGap" style="height: 36px; padding: 4px 10px; border-radius: 8px; border: none; background: rgba(255,255,255,0.2); color: #ffffff; font-weight: 600; outline: none; backdrop-filter: blur(4px);">
+                    <option value="0" style="color:#000;">Same Day Only (0 Days)</option>
+                    <option value="1" style="color:#000;">± 1 Day</option>
+                    <option value="2" style="color:#000;">± 2 Days</option>
+                    <option value="3" selected style="color:#000;">± 3 Days</option>
+                    <option value="5" style="color:#000;">± 5 Days</option>
+                    <option value="7" style="color:#000;">± 7 Days</option>
+                </select>
+            </div>
+            <button id="runReceiptsBtn" class="btn" onclick="runReceiptsScan()" style="height: 38px; margin-top: 15px; background: #ffffff; color: #4f46e5; border: none; font-weight: 700; padding: 0 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer;">
+                🔍 Scan Duplicate Receipts
+            </button>
+        </div>
+    </div>
+
+    <div class="audit-card">
+        <div class="audit-card-header" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0.02));">
+            <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #4f46e5;">Receipt Duplicates Audit Results</h3>
+            <span id="receiptsCount" class="badge badge-error" style="display: none;"></span>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Party Name</th>
+                        <th style="text-align: right;">Amount</th>
+                        <th>Vch 1 (Older)</th>
+                        <th>Date 1</th>
+                        <th>Vch 2 (Newer)</th>
+                        <th>Date 2</th>
+                        <th>Gap</th>
+                    </tr>
+                </thead>
+                <tbody id="receiptsBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-light); padding: 35px; font-size: 13.5px;">
+                            Click "Scan Duplicate Receipts" to run the scrutiny.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Tab 2: Duplicate Items Section -->
+<div id="sectionDupes" style="display: none;">
+    <div style="background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%); padding: 18px 24px; border-radius: 14px; color: white; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 6px 18px rgba(124, 58, 237, 0.25);">
+        <div>
+            <h4 style="margin: 0 0 4px 0; font-size: 17px; font-weight: 700; color: #ffffff;">🔁 Duplicate Items Audit</h4>
+            <p style="margin: 0; font-size: 13px; color: rgba(255,255,255,0.85);">Detects items billed multiple times in the same sales invoice with identical Qty and Rate.</p>
+        </div>
+        <button id="runDupesBtn" class="btn" onclick="runDupesScan()" style="height: 38px; background: #ffffff; color: #7c3aed; border: none; font-weight: 700; padding: 0 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer;">
+            🔍 Scan for Duplicate Items
+        </button>
+    </div>
+
+    <div class="audit-card">
+        <div class="audit-card-header" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(168, 85, 247, 0.02));">
+            <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #7c3aed;">Duplicate Items Audit Results</h3>
+            <span id="dupesCount" class="badge badge-error" style="display: none;"></span>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Voucher No</th>
+                        <th>Date</th>
+                        <th>Item Name</th>
+                        <th>Sr No.</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Times Billed</th>
+                    </tr>
+                </thead>
+                <tbody id="dupesBody">
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: var(--text-light); padding: 35px; font-size: 13.5px;">
+                            Click "Scan for Duplicate Items" to run the scrutiny.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Tab 3: Qty/Amount Mismatches Section -->
+<div id="sectionMismatch" style="display: none;">
+    <div style="background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); padding: 18px 24px; border-radius: 14px; color: white; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 6px 18px rgba(234, 88, 12, 0.25);">
+        <div>
+            <h4 style="margin: 0 0 4px 0; font-size: 17px; font-weight: 700; color: #ffffff;">⚠️ Qty / Amount Mismatches Audit</h4>
+            <p style="margin: 0; font-size: 13px; color: rgba(255,255,255,0.85);">Detects line items where Qty or Amount is missing or zero.</p>
+        </div>
+        <button id="runMismatchBtn" class="btn" onclick="runMismatchScan()" style="height: 38px; background: #ffffff; color: #ea580c; border: none; font-weight: 700; padding: 0 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer;">
+            🔍 Scan for Qty/Amount Mismatches
+        </button>
+    </div>
+
+    <div class="audit-card">
+        <div class="audit-card-header" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(249, 115, 22, 0.02));">
+            <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #ea580c;">Qty/Amount Mismatches Audit Results</h3>
+            <span id="mismatchCount" class="badge badge-warning" style="display: none;"></span>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Voucher No</th>
+                        <th>Date</th>
+                        <th>Item Name</th>
+                        <th>Sr No.</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Issue Type</th>
+                    </tr>
+                </thead>
+                <tbody id="mismatchBody">
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: var(--text-light); padding: 35px; font-size: 13.5px;">
+                            Click "Scan for Qty/Amount Mismatches" to run the audit.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Tab 4: Cross-Voucher Duplicates Section -->
+<div id="sectionCross" style="display: none;">
+    <div style="background: linear-gradient(135deg, #0284c7 0%, #06b6d4 100%); padding: 18px 24px; border-radius: 14px; color: white; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 6px 18px rgba(2, 132, 199, 0.25);">
+        <div>
+            <h4 style="margin: 0 0 4px 0; font-size: 17px; font-weight: 700; color: #ffffff;">📑 Cross-Voucher Duplicates Audit</h4>
+            <p style="margin: 0; font-size: 13px; color: rgba(255,255,255,0.85);">Detects same-day voucher pairs sharing ≥ 3 identical items (≥ 50% overlap of smaller bill). Catches partial duplicates like GM4043 vs GM4046.</p>
+        </div>
+        <button id="runCrossBtn" class="btn" onclick="runCrossScan()" style="height: 38px; background: #ffffff; color: #0284c7; border: none; font-weight: 700; padding: 0 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer;">
+            🔍 Scan Cross-Voucher Duplicates
+        </button>
+    </div>
+
+    <div class="audit-card">
+        <div class="audit-card-header" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(14, 165, 233, 0.02));">
+            <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #0284c7;">Cross-Voucher Duplicates Audit Results</h3>
+            <span id="crossCount" class="badge" style="display: none; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;"></span>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Voucher 1</th>
+                        <th>Voucher 2</th>
+                        <th>Overlap Details</th>
+                    </tr>
+                </thead>
+                <tbody id="crossBody">
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-light); padding: 35px; font-size: 13.5px;">
+                            Click "Scan Cross-Voucher Duplicates" to run the audit.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Tab 5: Settlement Scrutiny Section -->
+<div id="sectionSettlement" style="display: none;">
+    <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 18px 24px; border-radius: 14px; color: white; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 6px 18px rgba(5, 150, 105, 0.25);">
+        <div>
+            <h4 style="margin: 0 0 4px 0; font-size: 17px; font-weight: 700; color: #ffffff;">💳 Cash Settlement Scrutiny Audit</h4>
+            <p style="margin: 0; font-size: 13px; color: rgba(255,255,255,0.85);">Detects sales invoices for parties that are fully settled in cash.</p>
+        </div>
+        <button id="runSettlementBtn" class="btn" onclick="runSettlementScan()" style="height: 38px; background: #ffffff; color: #059669; border: none; font-weight: 700; padding: 0 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer;">
+            🔍 Scan Cash Settlements
+        </button>
+    </div>
+
+    <div class="audit-card">
+        <div class="audit-card-header" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.02));">
+            <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #059669;">Cash Settlement Scrutiny Results</h3>
+            <span id="settlementCount" class="badge badge-error" style="display: none;"></span>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Voucher No</th>
+                        <th>Date</th>
+                        <th>Customer Name</th>
+                        <th class="text-right">Bill Amount</th>
+                        <th class="text-right">Cash Received</th>
+                        <th>Audit Flag</th>
+                    </tr>
+                </thead>
+                <tbody id="settlementBody">
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-light); padding: 35px; font-size: 13.5px;">
+                            Click "Scan Cash Settlements" to run the scrutiny.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Tab 6: Master Scrutiny Section -->
+<div id="sectionMasters" style="display: none;">
+    <div style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); padding: 18px 24px; border-radius: 14px; color: white; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 6px 18px rgba(29, 78, 216, 0.25);">
+        <div>
+            <h4 style="margin: 0 0 4px 0; font-size: 17px; font-weight: 700; color: #ffffff;">🧑‍🤝‍🧑 Master Scrutiny (Gemini Semantic AI)</h4>
+            <p style="margin: 0; font-size: 13px; color: rgba(255,255,255,0.85);">Uses Google Gemini AI to analyze fuzzy matches and detect true semantic duplicate Party or Item names.</p>
+        </div>
+        <button id="runMastersBtn" class="btn" onclick="runMasterScan()" style="height: 38px; background: #ffffff; color: #1d4ed8; border: none; font-weight: 700; padding: 0 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer;">
+            🔍 Scan Masters
+        </button>
+    </div>
+
+    <!-- Party Duplicates -->
+    <div class="audit-card">
+        <div class="audit-card-header" style="background: linear-gradient(135deg, rgba(29, 78, 216, 0.08), rgba(29, 78, 216, 0.02));">
+            <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #1d4ed8;">Party Name Duplicates</h3>
+            <span id="partyMastersCount" class="badge badge-error" style="display: none;"></span>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Party Name 1</th>
+                        <th>Party Name 2</th>
+                        <th>Similarity Score</th>
+                        <th>AI Reasoning</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="partyMastersBody">
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-light); padding: 35px; font-size: 13.5px;">
+                            Click "Scan Masters" to run the AI matching algorithm.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Item Duplicates -->
+    <div class="audit-card">
+        <div class="audit-card-header" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.02));">
+            <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #3b82f6;">Item Name Duplicates</h3>
+            <span id="itemMastersCount" class="badge badge-error" style="display: none;"></span>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Item Name 1</th>
+                        <th>Item Name 2</th>
+                        <th>Similarity Score</th>
+                        <th>AI Reasoning</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="itemMastersBody">
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-light); padding: 35px; font-size: 13.5px;">
+                            Click "Scan Masters" to run the AI matching algorithm.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen Loading Overlay to Freeze Screen -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 99999; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: white;">
+    <div class="loader-spinner" style="width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: #6366f1; border-radius: 50%; animation: local-spin 0.8s linear infinite;"></div>
+    <div style="font-size: 16px; font-weight: 600; letter-spacing: 0.5px;" id="loadingOverlayText">Scanning Database...</div>
+    
+    <!-- Progress Bar Container -->
+    <div style="width: 300px; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; margin-top: 10px;">
+        <div id="loadingProgressBar" style="width: 0%; height: 100%; background: #6366f1; transition: width 0.2s ease-out; border-radius: 3px;"></div>
+    </div>
+    <div id="loadingProgressPercent" style="font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.8);">0%</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentTab = 'all';
+    let selectedDays = 1; // Default to 1 Day (Today only)
+
+    function formatMoney(amount) {
+        return amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    let progressInterval;
+    function startProgressSimulation() {
+        const bar = document.getElementById('loadingProgressBar');
+        const percent = document.getElementById('loadingProgressPercent');
+        bar.style.width = '0%';
+        percent.textContent = '0%';
+        
+        let currentProgress = 0;
+        clearInterval(progressInterval);
+        
+        progressInterval = setInterval(() => {
+            if (currentProgress < 90) {
+                let diff = (90 - currentProgress) / 10;
+                if (diff < 1) diff = 1;
+                currentProgress = Math.min(90, currentProgress + diff);
+                
+                const rounded = Math.round(currentProgress);
+                bar.style.width = `${rounded}%`;
+                percent.textContent = `${rounded}%`;
+            }
+        }, 100);
+    }
+    
+    function finishProgressSimulation() {
+        clearInterval(progressInterval);
+        const bar = document.getElementById('loadingProgressBar');
+        const percent = document.getElementById('loadingProgressPercent');
+        
+        bar.style.width = '100%';
+        percent.textContent = '100%';
+    }
+
+    function ensureSpinnerStyle() {
+        if (!document.getElementById('local-spin-style')) {
+            const style = document.createElement('style');
+            style.id = 'local-spin-style';
+            style.innerHTML = `
+                @keyframes local-spin { to { transform: rotate(360deg); } }
+                @keyframes pulse-red {
+                    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(220,38,38,0.5); }
+                    50% { opacity: 0.85; box-shadow: 0 0 0 4px rgba(220,38,38,0); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    function changeDaysRange(days, btn) {
+        selectedDays = days;
+        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Auto trigger scan for active tab
+        if (currentTab === 'all') {
+            runAllAudits();
+        } else if (currentTab === 'receipts') {
+            runReceiptsScan();
+        } else if (currentTab === 'dupes') {
+            runDupesScan();
+        } else if (currentTab === 'mismatch') {
+            runMismatchScan();
+        } else if (currentTab === 'cross') {
+            runCrossScan();
+        } else if (currentTab === 'settlement') {
+            runSettlementScan();
+        }
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        
+        // Update tab buttons style
+        const tabs = {
+            'all': { btn: 'tabAll', bg: 'var(--accent-indigo)' },
+            'receipts': { btn: 'tabReceipts', bg: 'var(--accent-indigo)' },
+            'dupes': { btn: 'tabDupes', bg: 'var(--accent-indigo)' },
+            'mismatch': { btn: 'tabMismatch', bg: 'var(--accent-orange)' },
+            'cross': { btn: 'tabCrossVoucher', bg: 'var(--accent-sky)' },
+            'settlement': { btn: 'tabSettlement', bg: 'var(--accent-emerald)' },
+            'masters': { btn: 'tabMasters', bg: '#2563eb' }
+        };
+        
+        Object.keys(tabs).forEach(t => {
+            const tbtn = document.getElementById(tabs[t].btn);
+            if (t === tab) {
+                tbtn.classList.add('active');
+                tbtn.style.background = tabs[t].bg;
+                tbtn.style.color = '#ffffff';
+                tbtn.style.borderColor = 'transparent';
+            } else {
+                tbtn.classList.remove('active');
+                tbtn.style.background = '#f8fafc';
+                tbtn.style.color = 'var(--text-secondary)';
+                tbtn.style.borderColor = '#e2e8f0';
+            }
+        });
+
+        // Toggle sections
+        document.getElementById('sectionAll').style.display = tab === 'all' ? 'block' : 'none';
+        document.getElementById('sectionReceipts').style.display = tab === 'receipts' ? 'block' : 'none';
+        document.getElementById('sectionDupes').style.display = tab === 'dupes' ? 'block' : 'none';
+        document.getElementById('sectionMismatch').style.display = tab === 'mismatch' ? 'block' : 'none';
+        document.getElementById('sectionCross').style.display = tab === 'cross' ? 'block' : 'none';
+        document.getElementById('sectionSettlement').style.display = tab === 'settlement' ? 'block' : 'none';
+        document.getElementById('sectionMasters').style.display = tab === 'masters' ? 'block' : 'none';
+    }
+
+    // --- Tab 0: Run All Audits (Simultaneous) ---
+    async function runAllAudits() {
+        const btn = document.getElementById('runAllBtn');
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Scanning All...`;
+        ensureSpinnerStyle();
+
+        // Put spinner in all bodies
+        const bodies = ['allReceiptsBody', 'allDupesBody', 'allMismatchBody', 'allCrossBody', 'allSettlementBody'];
+        bodies.forEach(bId => {
+            const cols = bId === 'allReceiptsBody' ? 7 : (bId === 'allCrossBody' ? 5 : (bId === 'allSettlementBody' ? 6 : 8));
+            document.getElementById(bId).innerHTML = `
+                <tr>
+                    <td colspan="${cols}" style="text-align: center; padding: 25px;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <div class="loader-spinner" style="width: 18px; height: 18px; border: 2px solid var(--border-color); border-top-color: var(--accent-indigo); border-radius: 50%; animation: local-spin 0.8s linear infinite;"></div>
+                            <span style="font-size: 13px; color: var(--text-secondary);">Auditing...</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        // Hide badges
+        document.getElementById('allReceiptsCount').style.display = 'none';
+        document.getElementById('allDupesCount').style.display = 'none';
+        document.getElementById('allMismatchCount').style.display = 'none';
+        document.getElementById('allCrossCount').style.display = 'none';
+        document.getElementById('allSettlementCount').style.display = 'none';
+
+        const limitText = selectedDays === 0 ? 'Lifetime' : `${selectedDays} Days`;
+        document.getElementById('loadingOverlayText').textContent = `Running all 5 audits (Limit: ${limitText})...`;
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        startProgressSimulation();
+
+        try {
+            // Run all 5 fetch requests in parallel
+            const gap = document.getElementById('daysGap').value;
+            const [receiptsRes, dupesRes, mismatchRes, crossRes, settlementRes] = await Promise.all([
+                fetch(`/api/analyzer/duplicates?gap=${gap}&days=${selectedDays}`).then(r => r.json()),
+                fetch(`/api/analyzer/sales_duplicates?days=${selectedDays}`).then(r => r.json()),
+                fetch(`/api/analyzer/sales_mismatches?days=${selectedDays}`).then(r => r.json()),
+                fetch(`/api/analyzer/cross_voucher_duplicates?days=${selectedDays}`).then(r => r.json()),
+                fetch(`/api/analyzer/party_vch_100_cash?days=${selectedDays}`).then(r => r.json())
+            ]);
+
+            finishProgressSimulation();
+
+            // 1. Render Receipts
+            const receiptsBody = document.getElementById('allReceiptsBody');
+            receiptsBody.innerHTML = '';
+            if (!receiptsRes.error && receiptsRes.length > 0) {
+                document.getElementById('allReceiptsCount').textContent = `${receiptsRes.length} Found`;
+                document.getElementById('allReceiptsCount').style.display = 'inline-block';
+                receiptsRes.forEach(d => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="font-weight: 600;">${d.party}</td>
+                        <td style="font-weight: 700; color: var(--accent-rose);">₹${formatMoney(d.amount)}</td>
+                        <td><span class="badge" style="background: var(--bg-secondary);">${d.vch1}</span></td>
+                        <td>${d.date1}</td>
+                        <td><span class="badge" style="background: var(--bg-secondary);">${d.vch2}</span></td>
+                        <td>${d.date2}</td>
+                        <td><span class="badge ${d.days_diff === 0 ? 'badge-error' : 'badge-warning'}">${d.days_diff === 0 ? 'Same Day' : d.days_diff + ' Days'}</span></td>
+                    `;
+                    receiptsBody.appendChild(tr);
+                });
+            } else {
+                receiptsBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--success-green); padding: 20px;">No duplicate receipt entries found! 🎉</td></tr>`;
+            }
+
+            // 2. Render Dupes
+            const dupesBody = document.getElementById('allDupesBody');
+            dupesBody.innerHTML = '';
+            if (!dupesRes.error && dupesRes.length > 0) {
+                document.getElementById('allDupesCount').textContent = `${dupesRes.length} Found`;
+                document.getElementById('allDupesCount').style.display = 'inline-block';
+                dupesRes.forEach(d => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="badge" style="background: var(--bg-secondary);">${d.vchno}</span></td>
+                        <td>${d.date}</td>
+                        <td style="font-weight: 600;">${d.item_name}</td>
+                        <td>Line ${d.sr_nos_str}</td>
+                        <td>${d.qty}</td>
+                        <td>₹${formatMoney(d.rate)}</td>
+                        <td>₹${formatMoney(d.amt)}</td>
+                        <td><span class="badge badge-error" style="font-weight: 700;">${d.dup_count} Times</span></td>
+                    `;
+                    dupesBody.appendChild(tr);
+                });
+            } else {
+                dupesBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--success-green); padding: 20px;">No duplicate items found! 🎉</td></tr>`;
+            }
+
+            // 3. Render Mismatches
+            const mismatchBody = document.getElementById('allMismatchBody');
+            mismatchBody.innerHTML = '';
+            if (!mismatchRes.error && mismatchRes.length > 0) {
+                document.getElementById('allMismatchCount').textContent = `${mismatchRes.length} Issues`;
+                document.getElementById('allMismatchCount').style.display = 'inline-block';
+                mismatchRes.forEach(m => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="badge" style="background: var(--bg-secondary);">${m.vchno}</span></td>
+                        <td>${m.date}</td>
+                        <td>${m.item_name}</td>
+                        <td>Line ${m.sr_no}</td>
+                        <td>${m.qty}</td>
+                        <td>₹${formatMoney(m.rate)}</td>
+                        <td style="color: var(--accent-rose);">₹${formatMoney(m.amt)}</td>
+                        <td><span class="badge ${m.issue_type.includes('Amount Missing') ? 'badge-error' : 'badge-warning'}">${m.issue_type}</span></td>
+                    `;
+                    mismatchBody.appendChild(tr);
+                });
+            } else {
+                mismatchBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--success-green); padding: 20px;">No mismatches found! 🎉</td></tr>`;
+            }
+
+            // 4. Render Cross-Vouchers
+            const crossBody = document.getElementById('allCrossBody');
+            crossBody.innerHTML = '';
+            const suspects = crossRes.suspects || [];
+            if (!crossRes.error && suspects.length > 0) {
+                document.getElementById('allCrossCount').textContent = `${suspects.length} Matches`;
+                document.getElementById('allCrossCount').style.display = 'inline-block';
+                suspects.forEach(s => {
+                    const tr = document.createElement('tr');
+                    const overlapColor = s.overlap_pct >= 90 ? '#dc2626' : s.overlap_pct >= 70 ? '#ea580c' : '#0284c7';
+                    const overlapBg   = s.overlap_pct >= 90 ? '#fee2e2' : s.overlap_pct >= 70 ? '#ffedd5' : '#e0f2fe';
+                    const sameParty = s.party1 && s.party2 && s.party1 === s.party2;
+                    const pctOfV1 = s.vch1_len > 0 ? Math.round((s.match_count / s.vch1_len) * 100) : 0;
+                    const pctOfV2 = s.vch2_len > 0 ? Math.round((s.match_count / s.vch2_len) * 100) : 0;
+                    
+                    // Consecutive VCH detection
+                    const n1 = parseInt((s.vch1.match(/(\d+)$/) || [0,0])[1]);
+                    const n2 = parseInt((s.vch2.match(/(\d+)$/) || [0,0])[1]);
+                    const vchDiff = (n1 > 0 && n2 > 0) ? Math.abs(n1 - n2) : 999;
+                    const isConsec = vchDiff <= 5;
+                    if (isConsec) {
+                        tr.style.cssText = 'border-left: 4px solid #dc2626; background: linear-gradient(90deg, rgba(220,38,38,0.06) 0%, transparent 60%);';
+                    }
+                    
+                    tr.innerHTML = `
+                        <td>${s.date}</td>
+                        <td><span class="badge" style="background:var(--bg-secondary); font-family:monospace; ${isConsec ? 'border:1px solid #fca5a5;' : ''}">${s.vch1}</span><div style="font-size:10px;color:#94a3b8;">${s.party1 || '—'}</div></td>
+                        <td>
+                            <span class="badge" style="background:var(--bg-secondary); font-family:monospace; ${isConsec ? 'border:1px solid #fca5a5;' : ''}">${s.vch2}</span>
+                            <div style="font-size:10px;color:#94a3b8;">${s.party2 || '—'}</div>
+                            ${sameParty ? '<div style="margin-top:2px;"><span style="font-size:9px;background:#fef9c3;color:#854d0e;padding:1px 4px;border-radius:3px;font-weight:700;">SAME PARTY</span></div>' : ''}
+                            ${isConsec ? `<div style="margin-top:3px;"><span style="font-size:9px;background:#dc2626;color:#fff;padding:2px 5px;border-radius:3px;font-weight:700;animation:pulse-red 1.5s infinite;">⚡ CONSEC ±${vchDiff}</span></div>` : ''}
+                        </td>
+                        <td>
+                            <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left; color:#94a3b8; font-weight:600; font-size:9px; padding:0 4px 3px 0; border-bottom:1px solid var(--border-color);">VCH</th>
+                                        <th style="text-align:center; color:#94a3b8; font-weight:600; font-size:9px; padding:0 4px 3px; border-bottom:1px solid var(--border-color);">Total</th>
+                                        <th style="text-align:center; color:#94a3b8; font-weight:600; font-size:9px; padding:0 4px 3px; border-bottom:1px solid var(--border-color);">Dup</th>
+                                        <th style="text-align:center; color:#94a3b8; font-weight:600; font-size:9px; padding:0 0 3px 4px; border-bottom:1px solid var(--border-color);">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding:3px 4px 1px 0; font-family:monospace; font-weight:700; color:#334155;">${s.vch1}</td>
+                                        <td style="text-align:center; padding:3px 4px 1px; color:#64748b;">${s.vch1_len}</td>
+                                        <td style="text-align:center; padding:3px 4px 1px;"><span style="background:${overlapBg}; color:${overlapColor}; font-weight:700; border-radius:3px; padding:0 4px;">${s.match_count}</span></td>
+                                        <td style="text-align:center; padding:3px 0 1px 4px; font-weight:700; color:${overlapColor};">${pctOfV1}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:1px 4px 0 0; font-family:monospace; font-weight:700; color:#334155;">${s.vch2}</td>
+                                        <td style="text-align:center; padding:1px 4px 0; color:#64748b;">${s.vch2_len}</td>
+                                        <td style="text-align:center; padding:1px 4px 0;"><span style="background:${overlapBg}; color:${overlapColor}; font-weight:700; border-radius:3px; padding:0 4px;">${s.match_count}</span></td>
+                                        <td style="text-align:center; padding:1px 0 0 4px; font-weight:700; color:${overlapColor};">${pctOfV2}%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    `;
+                    crossBody.appendChild(tr);
+                });
+            } else {
+                crossBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--success-green); padding: 20px;">No duplicate voucher pairs found! 🎉</td></tr>`;
+            }
+
+            // 5. Render Settlement
+            const settlementBody = document.getElementById('allSettlementBody');
+            settlementBody.innerHTML = '';
+            if (!settlementRes.error && settlementRes.length > 0) {
+                document.getElementById('allSettlementCount').textContent = `${settlementRes.length} Vouchers`;
+                document.getElementById('allSettlementCount').style.display = 'inline-block';
+                settlementRes.forEach(v => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="badge" style="background: var(--bg-secondary);">${v.vchno}</span></td>
+                        <td>${v.date}</td>
+                        <td style="font-weight: 600;">${v.party_name}</td>
+                        <td class="text-right">₹${formatMoney(v.vch_amt)}</td>
+                        <td class="text-right">₹${formatMoney(v.cash_settled)}</td>
+                        <td><span class="badge badge-error">100% Cash Settle</span></td>
+                    `;
+                    settlementBody.appendChild(tr);
+                });
+            } else {
+                settlementBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--success-green); padding: 20px;">No suspicious cash settlements found! 🎉</td></tr>`;
+            }
+
+            showToast("All 5 audits completed successfully!", "success");
+
+        } catch (err) {
+            console.error(err);
+            showToast("Failed to run all scans: " + err.message, "error");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `🚀 Run All 5 Audits`;
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 300);
+        }
+    }
+
+    // --- Tab 1: Receipt Duplicates Scanner ---
+    async function runReceiptsScan() {
+        const btn = document.getElementById('runReceiptsBtn');
+        const tbody = document.getElementById('receiptsBody');
+        const countBadge = document.getElementById('receiptsCount');
+        const gap = document.getElementById('daysGap').value;
+        
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Scanning...`;
+
+        ensureSpinnerStyle();
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 60px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;">
+                        <div class="loader-spinner" style="width: 36px; height: 36px; border: 3.5px solid var(--border-color); border-top-color: #6366f1; border-radius: 50%; animation: local-spin 0.8s linear infinite;"></div>
+                        <div style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Scanning database for duplicate receipts...</div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        
+        const limitText = selectedDays === 0 ? 'Lifetime' : `${selectedDays} Days`;
+        document.getElementById('loadingOverlayText').textContent = `Scanning receipt duplicates (Limit: ${limitText})...`;
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        startProgressSimulation();
+        
+        try {
+            const response = await fetch(`/api/analyzer/duplicates?gap=${gap}&days=${selectedDays}`);
+            const duplicates = await response.json();
+            
+            if (response.ok) {
+                finishProgressSimulation();
+                tbody.innerHTML = '';
+                
+                if (duplicates.length === 0) {
+                    countBadge.style.display = 'none';
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--success-green); font-weight: 500;">No duplicate receipt entries found! 🎉</td></tr>`;
+                    showToast('Scan complete: No duplicates found', 'success');
+                } else {
+                    countBadge.textContent = `${duplicates.length} Found`;
+                    countBadge.style.display = 'inline-block';
+                    
+                    duplicates.forEach(d => {
+                        const tr = document.createElement('tr');
+                        if (d.days_diff === 0) tr.style.backgroundColor = 'rgba(239, 68, 68, 0.02)';
+                        
+                        tr.innerHTML = `
+                            <td style="font-weight: 600; color: var(--text-primary);">${d.party}</td>
+                            <td style="font-weight: 700; color: var(--accent-rose);">₹${formatMoney(d.amount)}</td>
+                            <td><span class="badge" style="background: var(--bg-secondary); font-family: monospace; font-size: 13px;">${d.vch1}</span></td>
+                            <td style="color: var(--text-muted); font-weight: 500;">${d.date1}</td>
+                            <td><span class="badge" style="background: var(--bg-secondary); font-family: monospace; font-size: 13px;">${d.vch2}</span></td>
+                            <td style="color: var(--text-muted); font-weight: 500;">${d.date2}</td>
+                            <td>
+                                <span class="badge" style="
+                                    background: ${d.days_diff === 0 ? '#fee2e2' : '#fef3c7'}; 
+                                    color: ${d.days_diff === 0 ? '#ef4444' : '#d97706'}; 
+                                    border: 1px solid ${d.days_diff === 0 ? '#fecaca' : '#fde68a'};
+                                    font-weight: 600;
+                                ">
+                                    ${d.days_diff === 0 ? 'Same Day' : d.days_diff + ' Days'}
+                                </span>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    showToast(`Found ${duplicates.length} potential duplicate receipt entries.`, 'error');
+                }
+            } else {
+                throw new Error(duplicates.error || 'Failed to scan database');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast(error.message, 'error');
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--accent-rose);">Error: ${error.message}</td></tr>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `🔍 Scan Duplicate Receipts`;
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 300);
+        }
+    }
+
+    async function runMasterScan() {
+        const btn = document.getElementById('runMastersBtn');
+        const pBody = document.getElementById('partyMastersBody');
+        const iBody = document.getElementById('itemMastersBody');
+        
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Scanning...`;
+        
+        pBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 25px;"><div class="loader-spinner" style="width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: #1d4ed8; border-radius: 50%; margin: 0 auto; animation: local-spin 0.8s linear infinite;"></div></td></tr>`;
+        iBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 25px;"><div class="loader-spinner" style="width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; margin: 0 auto; animation: local-spin 0.8s linear infinite;"></div></td></tr>`;
+
+        try {
+            const res = await fetch(`/api/analyzer/master_duplicates`).then(r => r.json());
+            if (res.error) throw new Error(res.error);
+            
+            // Parties
+            pBody.innerHTML = '';
+            const pCount = document.getElementById('partyMastersCount');
+            if (res.parties && res.parties.length > 0) {
+                pCount.textContent = `${res.parties.length} Matches`;
+                pCount.style.display = 'inline-block';
+                res.parties.forEach(d => {
+                    pBody.innerHTML += `
+                        <tr>
+                            <td style="font-weight: 600;">${d.name1}</td>
+                            <td style="font-weight: 600;">${d.name2}</td>
+                            <td><span class="badge ${d.similarity >= 95 ? 'badge-error' : 'badge-warning'}">${d.similarity}%</span></td>
+                            <td style="font-size: 12px; color: #4b5563;">${d.ai_reason || 'N/A'}</td>
+                            <td><span class="badge badge-error">True Duplicate</span></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                pCount.style.display = 'none';
+                pBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--success-green); padding: 25px;">No semantic duplicates found! 🎉</td></tr>`;
+            }
+            
+            // Items
+            iBody.innerHTML = '';
+            const iCount = document.getElementById('itemMastersCount');
+            if (res.items && res.items.length > 0) {
+                iCount.textContent = `${res.items.length} Matches`;
+                iCount.style.display = 'inline-block';
+                res.items.forEach(d => {
+                    iBody.innerHTML += `
+                        <tr>
+                            <td style="font-weight: 600;">${d.name1}</td>
+                            <td style="font-weight: 600;">${d.name2}</td>
+                            <td><span class="badge ${d.similarity >= 95 ? 'badge-error' : 'badge-warning'}">${d.similarity}%</span></td>
+                            <td style="font-size: 12px; color: #4b5563;">${d.ai_reason || 'N/A'}</td>
+                            <td><span class="badge badge-error">True Duplicate</span></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                iCount.style.display = 'none';
+                iBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--success-green); padding: 25px;">No semantic duplicates found! 🎉</td></tr>`;
+            }
+            showToast("Gemini AI Scrutiny completed!", "success");
+        } catch (err) {
+            showToast(err.message, "error");
+            pBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--accent-rose); padding: 25px;">Failed to scan</td></tr>`;
+            iBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--accent-rose); padding: 25px;">Failed to scan</td></tr>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `🔍 Scan Masters`;
+        }
+    }
+
+    // --- Tab 2: Duplicate Items Scanner ---
+    async function runDupesScan() {
+        const btn = document.getElementById('runDupesBtn');
+        const tbody = document.getElementById('dupesBody');
+        const countBadge = document.getElementById('dupesCount');
+        
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Scanning...`;
+        
+        ensureSpinnerStyle();
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 60px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;">
+                        <div class="loader-spinner" style="width: 36px; height: 36px; border: 3.5px solid var(--border-color); border-top-color: #6366f1; border-radius: 50%; animation: local-spin 0.8s linear infinite;"></div>
+                        <div style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Scanning database for double entry items...</div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        
+        const limitText = selectedDays === 0 ? 'Lifetime' : `${selectedDays} Days`;
+        document.getElementById('loadingOverlayText').textContent = `Scanning item duplicates (Limit: ${limitText})...`;
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        startProgressSimulation();
+        
+        try {
+            const response = await fetch(`/api/analyzer/sales_duplicates?days=${selectedDays}`);
+            const dupes = await response.json();
+            
+            if (response.ok) {
+                finishProgressSimulation();
+                tbody.innerHTML = '';
+                
+                if (dupes.length === 0) {
+                    countBadge.style.display = 'none';
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--success-green);">No item level double entries found in any sales voucher! 🎉</td></tr>`;
+                    showToast('Scan complete: No duplicate items found', 'success');
+                } else {
+                    countBadge.textContent = `${dupes.length} Duplicates Found`;
+                    countBadge.style.display = 'inline-block';
+                    
+                    dupes.forEach(d => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><span class="badge" style="background: var(--bg-secondary);">${d.vchno}</span></td>
+                            <td>${d.date}</td>
+                            <td style="font-weight: 600; color: var(--text-primary);">${d.item_name}</td>
+                            <td><span style="color: #6366f1; font-size: 0.95em; font-weight: 700;">Line ${d.sr_nos_str}</span></td>
+                            <td style="font-weight: 700; color: var(--accent-emerald);">${d.qty}</td>
+                            <td>₹${formatMoney(d.rate)}</td>
+                            <td style="font-weight: 700; color: var(--text-primary);">₹${formatMoney(d.amt)}</td>
+                            <td>
+                                <span class="badge badge-error" style="background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; font-weight: 700;">
+                                    ${d.dup_count} Times
+                                </span>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    showToast(`Scan complete: Found ${dupes.length} suspicious duplicate billing lines.`, 'warning');
+                }
+            } else {
+                throw new Error(dupes.error || 'Failed to scan database');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast(error.message, 'error');
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--accent-rose);">Error: ${error.message}</td></tr>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg> Scan for Duplicate Items`;
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 300);
+        }
+    }
+
+    // --- Tab 3: Qty/Amount Mismatches Scanner ---
+    async function runMismatchScan() {
+        const btn = document.getElementById('runMismatchBtn');
+        const tbody = document.getElementById('mismatchBody');
+        const countBadge = document.getElementById('mismatchCount');
+        
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Scanning...`;
+        
+        ensureSpinnerStyle();
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 60px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;">
+                        <div class="loader-spinner" style="width: 36px; height: 36px; border: 3.5px solid var(--border-color); border-top-color: #ea580c; border-radius: 50%; animation: local-spin 0.8s linear infinite;"></div>
+                        <div style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Scanning database for quantity/amount mismatches...</div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        
+        const limitText = selectedDays === 0 ? 'Lifetime' : `${selectedDays} Days`;
+        document.getElementById('loadingOverlayText').textContent = `Scanning Qty/Amt mismatches (Limit: ${limitText})...`;
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        startProgressSimulation();
+        
+        try {
+            const response = await fetch(`/api/analyzer/sales_mismatches?days=${selectedDays}`);
+            const mismatches = await response.json();
+            
+            if (response.ok) {
+                finishProgressSimulation();
+                tbody.innerHTML = '';
+                
+                if (mismatches.length === 0) {
+                    countBadge.style.display = 'none';
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--success-green);">No Qty/Amount mismatches found in any sales voucher! 🎉</td></tr>`;
+                    showToast('Scan complete: No mismatches found', 'success');
+                } else {
+                    countBadge.textContent = `${mismatches.length} Issues Found`;
+                    countBadge.style.display = 'inline-block';
+                    
+                    mismatches.forEach(m => {
+                        const tr = document.createElement('tr');
+                        const isQtyIssue = m.issue_type.includes('Amount Missing');
+                        tr.innerHTML = `
+                            <td><span class="badge" style="background: var(--bg-secondary);">${m.vchno}</span></td>
+                            <td>${m.date}</td>
+                            <td style="font-weight: 500; color: var(--accent-indigo);">${m.item_name}</td>
+                            <td><span style="color: #8b5cf6; font-size: 0.9em; font-weight: 600;">Line ${m.sr_no}</span></td>
+                            <td style="font-weight: 600;">${m.qty}</td>
+                            <td>₹${formatMoney(m.rate)}</td>
+                            <td style="font-weight: 700; color: var(--accent-rose);">₹${formatMoney(m.amt)}</td>
+                            <td>
+                                <span class="badge ${isQtyIssue ? 'badge-error' : 'badge-warning'}">
+                                    ${m.issue_type}
+                                </span>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    showToast(`Found ${mismatches.length} line items with Qty/Amount discrepancies.`, 'warning');
+                }
+            } else {
+                throw new Error(mismatches.error || 'Failed to scan database');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast(error.message, 'error');
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--accent-rose);">Error: ${error.message}</td></tr>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg> Scan for Qty/Amount Mismatches`;
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 300);
+        }
+    }
+
+    // --- Tab 4: Cross-Voucher Duplicates Scanner ---
+    async function runCrossScan() {
+        const btn = document.getElementById('runCrossBtn');
+        const tbody = document.getElementById('crossBody');
+        const countBadge = document.getElementById('crossCount');
+        
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Scanning...`;
+        
+        ensureSpinnerStyle();
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 60px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;">
+                        <div class="loader-spinner" style="width: 36px; height: 36px; border: 3.5px solid var(--border-color); border-top-color: #0ea5e9; border-radius: 50%; animation: local-spin 0.8s linear infinite;"></div>
+                        <div style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Scanning database for cross-voucher duplicates...</div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        
+        const limitText = selectedDays === 0 ? 'Lifetime' : `${selectedDays} Days`;
+        document.getElementById('loadingOverlayText').textContent = `Scanning cross-voucher duplicates (Limit: ${limitText})...`;
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        startProgressSimulation();
+        
+        try {
+            const response = await fetch(`/api/analyzer/cross_voucher_duplicates?days=${selectedDays}`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                finishProgressSimulation();
+                tbody.innerHTML = '';
+                
+                const suspects = data.suspects || [];
+                if (suspects.length === 0) {
+                    countBadge.style.display = 'none';
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--success-green);">No identical voucher matches found! 🎉</td></tr>`;
+                    showToast('Scan complete: No cross-voucher duplicates found', 'success');
+                } else {
+                    countBadge.textContent = `${suspects.length} Matches Found`;
+                    countBadge.style.display = 'inline-block';
+                    
+                    suspects.forEach(s => {
+                        const tr = document.createElement('tr');
+                        const pctOfV1 = s.vch1_len > 0 ? Math.round((s.match_count / s.vch1_len) * 100) : 0;
+                        const pctOfV2 = s.vch2_len > 0 ? Math.round((s.match_count / s.vch2_len) * 100) : 0;
+                        const overlapColor = s.overlap_pct >= 90 ? '#dc2626' : s.overlap_pct >= 70 ? '#ea580c' : '#0284c7';
+                        const overlapBg   = s.overlap_pct >= 90 ? '#fee2e2' : s.overlap_pct >= 70 ? '#ffedd5' : '#e0f2fe';
+                        const party1 = s.party1 || '—';
+                        const party2 = s.party2 || '—';
+                        const sameParty = s.party1 && s.party2 && s.party1 === s.party2;
+                        
+                        // --- Consecutive VCH Number Detection ---
+                        // Extract trailing digits from voucher names (e.g. "GM3594" → 3594)
+                        const num1 = parseInt((s.vch1.match(/(\d+)$/) || [0, 0])[1]);
+                        const num2 = parseInt((s.vch2.match(/(\d+)$/) || [0, 0])[1]);
+                        const vchDiff = (num1 > 0 && num2 > 0) ? Math.abs(num1 - num2) : 999;
+                        const isConsecutive = vchDiff <= 5;
+                        
+                        // Row styling: if consecutive, add danger left border + subtle red bg
+                        if (isConsecutive) {
+                            tr.style.cssText = 'border-left: 4px solid #dc2626; background: linear-gradient(90deg, rgba(220,38,38,0.06) 0%, transparent 60%);';
+                        }
+                        
+                        const consecutiveBadge = isConsecutive ? `
+                            <div style="margin-top:5px;">
+                                <span style="display:inline-flex; align-items:center; gap:4px; font-size:10px; background:#dc2626; color:#fff; padding:2px 7px; border-radius:4px; font-weight:700; animation: pulse-red 1.5s infinite;">
+                                    ⚡ CONSECUTIVE VCH <span style="background:rgba(255,255,255,0.25); border-radius:3px; padding:0 4px; margin-left:2px;">±${vchDiff}</span>
+                                </span>
+                            </div>` : '';
+                        
+                        tr.innerHTML = `
+                            <td><span style="font-weight:600; color:#64748b;">${s.date}</span></td>
+                            <td>
+                                <span class="badge" style="background:var(--bg-secondary); font-family:monospace; ${isConsecutive ? 'border: 1px solid #fca5a5;' : ''}">${s.vch1}</span>
+                                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${party1}</div>
+                            </td>
+                            <td>
+                                <span class="badge" style="background:var(--bg-secondary); font-family:monospace; ${isConsecutive ? 'border: 1px solid #fca5a5;' : ''}">${s.vch2}</span>
+                                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${party2}</div>
+                                ${sameParty ? '<div style="margin-top:3px;"><span style="font-size:10px; background:#fef9c3; color:#854d0e; padding:1px 6px; border-radius:4px; font-weight:700;">SAME PARTY</span></div>' : ''}
+                                ${consecutiveBadge}
+                            </td>
+                            <td>
+                                <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align:left; color:#94a3b8; font-weight:600; font-size:10px; padding:0 6px 4px 0; border-bottom:1px solid var(--border-color);">VCH</th>
+                                            <th style="text-align:center; color:#94a3b8; font-weight:600; font-size:10px; padding:0 6px 4px; border-bottom:1px solid var(--border-color);">Total Items</th>
+                                            <th style="text-align:center; color:#94a3b8; font-weight:600; font-size:10px; padding:0 6px 4px; border-bottom:1px solid var(--border-color);">Duplicate</th>
+                                            <th style="text-align:center; color:#94a3b8; font-weight:600; font-size:10px; padding:0 0 4px 6px; border-bottom:1px solid var(--border-color);">%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style="padding:4px 6px 2px 0; font-family:monospace; font-weight:700; color:#334155;">${s.vch1}</td>
+                                            <td style="text-align:center; padding:4px 6px 2px; color:#64748b; font-weight:500;">${s.vch1_len}</td>
+                                            <td style="text-align:center; padding:4px 6px 2px;"><span style="background:${overlapBg}; color:${overlapColor}; font-weight:700; border-radius:4px; padding:1px 6px;">${s.match_count}</span></td>
+                                            <td style="text-align:center; padding:4px 0 2px 6px; font-weight:700; color:${overlapColor};">${pctOfV1}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding:2px 6px 0 0; font-family:monospace; font-weight:700; color:#334155;">${s.vch2}</td>
+                                            <td style="text-align:center; padding:2px 6px 0; color:#64748b; font-weight:500;">${s.vch2_len}</td>
+                                            <td style="text-align:center; padding:2px 6px 0;"><span style="background:${overlapBg}; color:${overlapColor}; font-weight:700; border-radius:4px; padding:1px 6px;">${s.match_count}</span></td>
+                                            <td style="text-align:center; padding:2px 0 0 6px; font-weight:700; color:${overlapColor};">${pctOfV2}%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    showToast(`Scan complete: Found ${suspects.length} duplicate billing pairs.`, 'warning');
+                }
+            } else {
+                throw new Error(data.error || 'Failed to scan database');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast(error.message, 'error');
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--accent-rose);">Error: ${error.message}</td></tr>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg> Scan Cross-Voucher Duplicates`;
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 300);
+        }
+    }
+
+    // --- Tab 5: Settlement Scrutiny Scanner ---
+    async function runSettlementScan() {
+        const btn = document.getElementById('runSettlementBtn');
+        const tbody = document.getElementById('settlementBody');
+        const countBadge = document.getElementById('settlementCount');
+        
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Scanning...`;
+        
+        ensureSpinnerStyle();
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 60px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;">
+                        <div class="loader-spinner" style="width: 36px; height: 36px; border: 3.5px solid var(--border-color); border-top-color: #10b981; border-radius: 50%; animation: local-spin 0.8s linear infinite;"></div>
+                        <div style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Scanning sales vouchers for cash settlements...</div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        
+        const limitText = selectedDays === 0 ? 'Lifetime' : `${selectedDays} Days`;
+        document.getElementById('loadingOverlayText').textContent = `Scanning cash settlements (Limit: ${limitText})...`;
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        startProgressSimulation();
+        
+        try {
+            const response = await fetch(`/api/analyzer/party_vch_100_cash?days=${selectedDays}`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                finishProgressSimulation();
+                tbody.innerHTML = '';
+                
+                if (data.length === 0) {
+                    countBadge.style.display = 'none';
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 40px; color: var(--success-green);">No party vouchers with 100% cash settlement found! 🎉</td></tr>`;
+                    showToast('Scan complete: No issues found', 'success');
+                } else {
+                    countBadge.textContent = `${data.length} Vouchers Found`;
+                    countBadge.style.display = 'inline-block';
+                    
+                    data.forEach(v => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><span class="badge" style="background: var(--bg-secondary); font-family: monospace; font-size: 13px;">${v.vchno}</span></td>
+                            <td style="color: var(--text-muted); font-weight: 500;">${v.date}</td>
+                            <td style="font-weight: 600; color: var(--text-primary);">${v.party_name}</td>
+                            <td class="text-right" style="font-weight: 700; color: var(--accent-rose);">₹${formatMoney(v.vch_amt)}</td>
+                            <td class="text-right" style="font-weight: 700; color: var(--accent-emerald);">₹${formatMoney(v.cash_settled)}</td>
+                            <td>
+                                <span class="badge badge-error" style="background: #fee2e2; color: #ef4444; border: 1px solid #fecaca;">
+                                    100% Cash Settle
+                                </span>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    showToast(`Found ${data.length} suspicious cash-settled party vouchers.`, 'error');
+                }
+            } else {
+                throw new Error(data.error || 'Failed to scan database');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast(error.message, 'error');
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 40px; color: var(--accent-rose);">Error: ${error.message}</td></tr>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Scan Cash Settlements`;
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 300);
+        }
+    }
+
+    // Auto load tab on start
+    document.addEventListener("DOMContentLoaded", () => {
+        switchTab('all');
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Item Analysis{% endblock %}
+{% block page_title %}Item Wise Sales Analysis{% endblock %}
+{% block page_subtitle %}Track top selling items by volume and revenue{% endblock %}
+
+{% block topbar_actions %}
+<div style="display: flex; gap: 10px; align-items: center; background: white; padding: 5px 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
+    <input type="date" id="fromDate" class="form-control" style="width: 140px; border:none; padding: 5px;">
+    <span style="color: #64748b;">to</span>
+    <input type="date" id="toDate" class="form-control" style="width: 140px; border:none; padding: 5px;">
+    <button class="btn btn-primary" onclick="loadAnalysis()" style="padding: 6px 12px;">Analyze</button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Chart Section -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Top 10 Selling Items</h2>
+        <select id="chartMetric" class="form-control" style="width: auto; padding: 4px 10px;" onchange="updateChart()">
+            <option value="invoice_count">By Invoices (Bills)</option>
+            <option value="amount">By Revenue (₹)</option>
+        </select>
+    </div>
+    <div class="card-body" style="position: relative; height: 350px; width: 100%;">
+        <canvas id="itemsChart"></canvas>
+    </div>
+</div>
+
+<!-- Data Table Section -->
+<div class="card">
+    <div class="card-header">
+        <h2>Complete Item Sales Data</h2>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="data-table" id="itemsTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Item Name</th>
+                        <th style="text-align: right;">Invoices (Bills)</th>
+                        <th style="text-align: right;">Total Revenue (₹)</th>
+                    </tr>
+                </thead>
+                <tbody id="itemsTableBody">
+                    <tr><td colspan="4" style="text-align:center; padding: 20px;">Select date range and click Analyze</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let rawData = [];
+    let itemsChart = null;
+
+    // Initialize dates to last 30 days
+    document.addEventListener('DOMContentLoaded', () => {
+        const toDate = new Date();
+        const fromDate = new Date();
+        fromDate.setDate(toDate.getDate() - 30);
+        
+        document.getElementById('toDate').value = toDate.toISOString().split('T')[0];
+        document.getElementById('fromDate').value = fromDate.toISOString().split('T')[0];
+        
+        // Auto load
+        loadAnalysis();
+    });
+
+    async function loadAnalysis() {
+        const from = document.getElementById('fromDate').value;
+        const to = document.getElementById('toDate').value;
+        
+        const tbody = document.getElementById('itemsTableBody');
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">Loading data... please wait.</td></tr>';
+
+        try {
+            const res = await fetch(`/api/item_sales_analysis?from_date=${from}&to_date=${to}`);
+            const data = await res.json();
+            
+            if (data.error) {
+                tbody.innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">Error: ${data.error}</td></tr>`;
+                return;
+            }
+            
+            rawData = data.items || data; // support both new dict format and old list
+            const totalInvoices = data.total_invoices || 0;
+            
+            if (rawData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">No sales data found for this period.</td></tr>';
+                if(itemsChart) itemsChart.destroy();
+                return;
+            }
+
+            renderTable(totalInvoices);
+            updateChart();
+
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">Network error: ${e.message}</td></tr>`;
+        }
+    }
+
+    function renderTable(totalInvoices) {
+        totalInvoices = totalInvoices || 0;
+        const tbody = document.getElementById('itemsTableBody');
+        let html = '';
+        
+        rawData.forEach((item, index) => {
+            const pct = totalInvoices > 0 ? ((item.invoice_count / totalInvoices) * 100).toFixed(1) : 0;
+            html += `
+                <tr>
+                    <td style="color:#64748b; width: 40px;">${index + 1}</td>
+                    <td style="font-weight: 500;">${item.item_name}</td>
+                    <td style="text-align: right;">
+                        <span style="background: rgba(99,102,241,0.1); color: #6366f1; padding: 2px 10px; border-radius: 12px; font-size: 13px; font-weight: 700;">
+                            ${item.invoice_count} / ${totalInvoices} bills
+                        </span>
+                        <small style="color:#94a3b8; margin-left:4px;">${pct}%</small>
+                    </td>
+                    <td style="text-align: right; color:#10b981; font-weight: 600;">₹${item.amount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function updateChart() {
+        const metric = document.getElementById('chartMetric').value;
+        
+        // Clone and sort data based on selected metric for top 10
+        let sortedData = [...rawData].sort((a, b) => b[metric] - a[metric]).slice(0, 10);
+        
+        const labels = sortedData.map(d => d.item_name.length > 25 ? d.item_name.substring(0,25)+'...' : d.item_name);
+        const values = sortedData.map(d => d[metric]);
+        
+        const isAmount = metric === 'amount';
+        const isInvoice = metric === 'invoice_count';
+        const bgColor = isInvoice ? 'rgba(99, 102, 241, 0.7)' : 'rgba(16, 185, 129, 0.7)';
+        const borderColor = isInvoice ? 'rgb(99, 102, 241)' : 'rgb(16, 185, 129)';
+        const labelText = isInvoice ? 'Invoice Count (Bills)' : 'Total Revenue (₹)';
+
+        if (itemsChart) {
+            itemsChart.destroy();
+        }
+
+        const ctx = document.getElementById('itemsChart').getContext('2d');
+        itemsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: labelText,
+                    data: values,
+                    backgroundColor: bgColor,
+                    borderColor: borderColor,
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed.y !== null) {
+                                    if(isAmount) {
+                                        label += '₹' + context.parsed.y.toLocaleString('en-IN', {minimumFractionDigits:2});
+                                    } else {
+                                        label += context.parsed.y + ' bills';
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}All Receipts{% endblock %}
+{% block page_title %}All Receipts History{% endblock %}
+{% block page_subtitle %}Complete history of all receipt vouchers saved in Busy{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('receipts.receipt_new') }}" class="btn btn-primary">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    New Receipt
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header" style="gap: 16px;">
+    <div class="search-input-wrapper" style="flex: 1;">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="tableSearch" class="form-control search-input" placeholder="Search by party name or voucher number...">
+    </div>
+    <span class="badge badge-indigo" style="font-size: 13px; padding: 8px 14px;">Total {{ receipts|length }} Receipts</span>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table" id="receiptTable">
+      <thead>
+        <tr>
+          <th>VOUCHER NO</th>
+          <th>DATE</th>
+          <th>PARTY ACCOUNT</th>
+          <th class="text-right">AMOUNT (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if receipts %}
+          {% for r in receipts %}
+          <tr class="searchable-row">
+            <td><span class="badge badge-sky" style="font-family: monospace; font-size: 13px;">{{ r.vch_no }}</span></td>
+            <td style="color: var(--text-muted); font-weight: 500;">{{ r.date }}</td>
+            <td style="font-weight: 600; color: var(--text-primary);">{{ r.party or '—' }}</td>
+            <td class="text-right" style="font-weight: 700; color: var(--accent-emerald); font-size: 15px;">₹{{ "{:,.2f}".format(r.amount) }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">No receipts found</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('tableSearch').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.searchable-row').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+</script>
+{% endblock %}
+

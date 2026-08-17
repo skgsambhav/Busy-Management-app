@@ -1,0 +1,627 @@
+{% extends "base.html" %}
+
+{% block title %}GM-OUT Dashboard{% endblock %}
+{% block page_title %}GM-OUT : Pending Dispatch{% endblock %}
+{% block page_subtitle %}
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <span>Manage all bills ready for dispatch with pending status</span>
+    <a href="/gm_out/delivered" style="background: #10b981; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: bold;">View Delivered</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+/* Premium Dashboard UI */
+.gm-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+@media (max-width: 1024px) {
+    .gm-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+    .gm-kpi-grid { grid-template-columns: 1fr; }
+}
+
+.gm-kpi-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.gm-kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+}
+.gm-kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 4px;
+}
+.gm-kpi-card.pending::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.gm-kpi-card.value::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+.gm-kpi-card.packer::before { background: linear-gradient(90deg, #ec4899, #f472b6); }
+
+.kpi-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+.kpi-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.1;
+}
+
+/* Data Table */
+.data-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.table-toolbar {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+}
+
+.search-box {
+    position: relative;
+    width: 300px;
+}
+.search-box input {
+    width: 100%;
+    padding: 10px 16px 10px 40px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+    background: #ffffff;
+}
+.search-box input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.search-box svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+}
+
+.gm-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.gm-table th {
+    background: #ffffff;
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e2e8f0;
+    text-align: left;
+}
+.gm-table td {
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+.gm-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+.gm-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.badge-pending {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fffbeb;
+    color: #d97706;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid #fde68a;
+    box-shadow: 0 1px 2px rgba(245, 158, 11, 0.1);
+}
+.badge-pending::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #f59e0b;
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+.user-tag {
+    display: inline-block;
+    padding: 4px 8px;
+    background: #f1f5f9;
+    color: #475569;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid #e2e8f0;
+}
+
+/* Modal CSS */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.active {
+    display: flex;
+}
+.modal-content {
+    background: #ffffff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 400px;
+    padding: 24px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.modal-overlay.active .modal-content {
+    transform: translateY(0);
+    opacity: 1;
+}
+.modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 16px;
+}
+.form-group {
+    margin-bottom: 16px;
+}
+.form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 6px;
+}
+.form-group input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+.form-group input:focus {
+    border-color: #3b82f6;
+}
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+}
+.btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+.btn-cancel {
+    background: #f1f5f9;
+    color: #475569;
+}
+.btn-cancel:hover { background: #e2e8f0; }
+.btn-save {
+    background: #3b82f6;
+    color: #ffffff;
+}
+.btn-save:hover { background: #2563eb; }
+
+/* Table Action Buttons */
+.btn-add-info {
+    background: #f1f5f9;
+    color: #3b82f6;
+    border: 1px solid #bfdbfe;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-add-info:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+}
+.btn-print {
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.btn-print:hover {
+    background: #059669;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+}
+.btn-icon {
+    padding: 6px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-edit {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+.btn-edit:hover { background: #e2e8f0; color: #1e293b; }
+
+.btn-deliver {
+    background: #10b981;
+    color: #ffffff;
+}
+.btn-deliver:hover { background: #059669; }
+
+</style>
+
+<!-- KPI Cards -->
+<div class="gm-kpi-grid">
+    <div class="gm-kpi-card pending">
+        <div class="kpi-title">Total Pending Bills</div>
+        <div class="kpi-value" id="kpi-count">0</div>
+        <div style="font-size: 13px; color: #64748b; margin-top: 8px; font-weight: 500;">Ready for dispatch</div>
+    </div>
+    
+    <div class="gm-kpi-card value">
+        <div class="kpi-title">Total Invoice Value</div>
+        <div class="kpi-value" id="kpi-value" style="color: #2563eb;">₹0.00</div>
+        <div style="font-size: 13px; color: #64748b; margin-top: 8px; font-weight: 500;">Pending dispatch amount</div>
+    </div>
+    
+    <div class="gm-kpi-card packer">
+        <div class="kpi-title">Top Packer (Pending)</div>
+        <div class="kpi-value" id="kpi-packer" style="color: #db2777; font-size: 24px; margin-top: 6px;">-</div>
+        <div style="font-size: 13px; color: #64748b; margin-top: 8px; font-weight: 500;" id="kpi-packer-sub">0 Bills packed</div>
+    </div>
+</div>
+
+<!-- Data Table -->
+<div class="data-card">
+    <div class="table-toolbar">
+        <h2 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">Dispatch Queue</h2>
+        <div class="search-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="searchInput" placeholder="Search Account or Vch No...">
+        </div>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table class="gm-table">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">Date</th>
+                    <th style="width: 12%;">Vch No</th>
+                    <th style="width: 25%;">Account Name</th>
+                    <th style="width: 13%;">Salesman</th>
+                    <th style="width: 13%;">Billed By</th>
+                    <th style="width: 13%;">Packed By</th>
+                    <th style="width: 14%; text-align: right;">Invoice Value</th>
+                    <th style="width: 8%; text-align: center;">Status</th>
+                    <th style="width: 10%; text-align: center;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="gmTableBody">
+                <tr><td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">Loading pending bills...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Transport Info Modal -->
+<div class="modal-overlay" id="transportModal">
+    <div class="modal-content">
+        <div class="modal-title">Add Transport Info</div>
+        <input type="hidden" id="modalVchNo">
+        <div class="form-group">
+            <label>Transporter Name</label>
+            <input type="text" id="inputTransporter" placeholder="e.g. Mahakal Travels" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label>Total Parcels</label>
+            <input type="number" id="inputParcels" placeholder="e.g. 2" min="1">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeTransportModal()">Cancel</button>
+            <button class="btn btn-save" id="btnSaveTransport" onclick="saveTransportInfo()">Save & Print</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allData = [];
+
+document.addEventListener("DOMContentLoaded", function() {
+    loadPendingBills();
+    
+    document.getElementById("searchInput").addEventListener("input", function(e) {
+        renderTable(e.target.value);
+    });
+});
+
+function formatMoney(val) {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(val);
+}
+
+function loadPendingBills() {
+    fetch('/api/gm_out/pending_bills')
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById("gmTableBody").innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 40px; color: #ef4444;">${data.error}</td></tr>`;
+                return;
+            }
+            allData = data;
+            updateKPIs(data);
+            renderTable("");
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById("gmTableBody").innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 40px; color: #ef4444;">Failed to load data. Ensure backend is running.</td></tr>`;
+        });
+}
+
+function updateKPIs(data) {
+    let totalAmt = 0;
+    let packers = {};
+    
+    data.forEach(item => {
+        totalAmt += item.total_amount || 0;
+        let p = item.packed_by || "Unknown";
+        if (p && p.toUpperCase() !== "N/A" && p.toUpperCase() !== "UNKNOWN") {
+            packers[p] = (packers[p] || 0) + 1;
+        }
+    });
+    
+    document.getElementById("kpi-count").textContent = data.length;
+    document.getElementById("kpi-value").textContent = formatMoney(totalAmt);
+    
+    let topPacker = "-";
+    let topCount = 0;
+    for (let p in packers) {
+        if (packers[p] > topCount) {
+            topCount = packers[p];
+            topPacker = p;
+        }
+    }
+    
+    document.getElementById("kpi-packer").textContent = topPacker;
+    document.getElementById("kpi-packer-sub").textContent = `${topCount} Bills ready`;
+}
+
+function renderTable(searchTerm) {
+    const tbody = document.getElementById("gmTableBody");
+    const s = searchTerm.toLowerCase();
+    
+    const filtered = allData.filter(item => {
+        if (!s) return true;
+        return (item.party_name && item.party_name.toLowerCase().includes(s)) ||
+               (item.vno && item.vno.toLowerCase().includes(s));
+    });
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 40px; color: #64748b; font-weight: 500;">No pending bills found.</td></tr>`;
+        return;
+    }
+    
+    let html = '';
+    filtered.forEach(item => {
+        html += `
+            <tr>
+                <td style="font-weight: 500;">${item.date || '—'}</td>
+                <td>
+                    <span style="background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-weight: 700; color: #334155; font-size: 12px; border: 1px solid #e2e8f0; font-family: monospace;">
+                        ${item.vno || '—'}
+                    </span>
+                </td>
+                <td style="font-weight: 700; color: #0f172a;">
+                    ${item.party_name || '—'}
+                    ${item.mobile ? `<br><span style="font-size: 10px; color: #64748b; font-weight: 500; display: inline-block; margin-top: 2px;">Mob: ${item.mobile}</span>` : ''}
+                </td>
+                <td><span class="user-tag">${item.salesman || '—'}</span></td>
+                <td><span class="user-tag">${item.billed_by || '—'}</span></td>
+                <td><span class="user-tag">${item.packed_by || '—'}</span></td>
+                <td style="text-align: right; font-weight: 700; color: #1e293b; font-variant-numeric: tabular-nums;">
+                    ${formatMoney(item.total_amount)}
+                </td>
+                <td style="text-align: center;">
+                    <span class="badge-pending">Pending</span>
+                </td>
+                <td style="text-align: center;">
+                    ${item.dispatch_id ? 
+                        `<div class="action-buttons">
+                            <button class="btn-print" onclick="printDispatch(${item.dispatch_id})" title="Reprint">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                                Print
+                            </button>
+                            <button class="btn-icon btn-edit" onclick='openTransportModal(${JSON.stringify(item)})' title="Edit">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            </button>
+                            <button class="btn-icon btn-deliver" onclick="markDelivered(${item.dispatch_id}, '${item.vno}')" title="Mark Delivered">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </button>
+                         </div>` : 
+                        `<button class="btn-add-info" onclick='openTransportModal(${JSON.stringify(item)})'>+ Add Info</button>`
+                    }
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+let currentActiveItem = null;
+
+function openTransportModal(item) {
+    currentActiveItem = item;
+    document.getElementById("modalVchNo").value = item.vno;
+    document.getElementById("inputTransporter").value = item.transporter || "";
+    document.getElementById("inputParcels").value = item.total_parcel || "";
+    document.getElementById("transportModal").classList.add("active");
+    
+    // Change button text if editing
+    document.getElementById("btnSaveTransport").textContent = item.dispatch_id ? "Update & Print" : "Save & Print";
+    
+    setTimeout(() => document.getElementById("inputTransporter").focus(), 100);
+}
+
+function closeTransportModal() {
+    document.getElementById("transportModal").classList.remove("active");
+    currentActiveItem = null;
+}
+
+function saveTransportInfo() {
+    const transporter = document.getElementById("inputTransporter").value.trim();
+    const parcels = document.getElementById("inputParcels").value.trim();
+    
+    if(!transporter || !parcels) {
+        alert("Please enter both Transporter Name and Total Parcels.");
+        return;
+    }
+    
+    const btn = document.getElementById("btnSaveTransport");
+    btn.textContent = "Saving...";
+    btn.disabled = true;
+    
+    // Merge input info with existing item info
+    const payload = {
+        ...currentActiveItem,
+        transporter: transporter,
+        total_parcel: parcels
+    };
+    
+    const payloadStr = encodeURIComponent(JSON.stringify(payload));
+    
+    fetch(`/api/gm_out/dispatch?payload=${payloadStr}`, {
+        method: 'GET'
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.textContent = "Save & Print";
+        btn.disabled = false;
+        
+        if (data.success) {
+            closeTransportModal();
+            // Update the item locally
+            const matchedItem = allData.find(x => x.vno === currentActiveItem.vno);
+            if(matchedItem) {
+                matchedItem.dispatch_id = data.id || matchedItem.dispatch_id; // id might be unchanged on upsert
+                matchedItem.transporter = transporter;
+                matchedItem.total_parcel = parcels;
+            }
+            // Re-render table
+            renderTable(document.getElementById("searchInput").value);
+            // Open print window
+            printDispatch(matchedItem.dispatch_id);
+        } else {
+            alert("Error saving: " + data.error);
+        }
+    })
+    .catch(err => {
+        btn.textContent = "Save & Print";
+        btn.disabled = false;
+        alert("Request failed. Please try again.");
+    });
+}
+
+function printDispatch(dispatchId) {
+    // Open in a popup window that can be printed easily
+    const printWindow = window.open(`/gm_out/print/${dispatchId}`, 'PrintDispatch', 'width=400,height=600');
+    if(!printWindow) {
+        alert("Please allow popups to print.");
+    }
+}
+
+function markDelivered(dispatchId, vno) {
+    if(!confirm("Are you sure you want to mark this bill as Delivered? It will be removed from this list.")) return;
+    
+    fetch(`/api/gm_out/delivered/${dispatchId}`, { method: 'GET' })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Remove from allData locally
+            allData = allData.filter(item => item.vno !== vno);
+            updateKPIs(allData);
+            renderTable(document.getElementById("searchInput").value);
+        } else {
+            alert("Error: " + data.error);
+        }
+    })
+    .catch(err => {
+        alert("Failed to mark delivered.");
+    });
+}
+</script>
+{% endblock %}

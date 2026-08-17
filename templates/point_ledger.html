@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+
+{% block title %}Points Ledger{% endblock %}
+{% block page_title %}Points Ledger{% endblock %}
+{% block page_subtitle %}Track customer loyalty points earned, redeemed, and expired{% endblock %}
+
+{% block content %}
+<div class="ledger-wrapper" style="display: flex; flex-direction: column; gap: 16px;">
+    <!-- Search Section -->
+    <div class="card search-card-redesigned" style="background: var(--surface-card); border-radius: 14px; padding: 16px 20px; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative;">
+        <div class="search-card-body">
+            <label class="search-label" style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; color: #ec4899; letter-spacing: 0.8px; margin-bottom: 8px; text-transform: uppercase;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                SELECT CONTACT WISE
+            </label>
+            <div style="display: flex; align-items: center; width: 100%;">
+                <div class="search-input-wrapper" style="position: relative; flex: 1;">
+                    <svg class="search-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-light); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="partySearch" class="form-control" placeholder="Type contact name (e.g. PARAS PARJAPATI)..." autocomplete="off" value="{{ selected_name or '' }}" style="height: 42px; border-radius: 20px; padding-left: 40px; font-size: 13.5px;">
+                    <div id="partyDropdown" class="dropdown-list hidden"></div>
+                </div>
+                {% if selected_code %}
+                <button onclick="clearSelection()" class="btn" style="margin-left: 10px; height: 42px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-body); cursor: pointer; padding: 0 16px; color: var(--text-main); font-weight: 600; white-space: nowrap; font-size: 13px;">
+                    ✕ Clear Selection
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Mode (No specific contact selected) -->
+    <div id="summaryMode" class="card" {% if selected_code %}style="display: none; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); border: 1px solid var(--border-color);"{% else %}style="display: block; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); border: 1px solid var(--border-color);"{% endif %}>
+        <div class="card-header" style="background: linear-gradient(135deg, rgba(236, 72, 153, 0.08) 0%, rgba(139, 92, 246, 0.05) 100%); border-bottom: 1px solid var(--border-color); padding: 14px 20px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #ec4899, #8b5cf6); color: white; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 3px 8px rgba(236,72,153,0.3);">
+                    <span>🎁</span>
+                </div>
+                <div>
+                    <h2 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main);">Points Summary by Contact</h2>
+                    <p style="margin: 1px 0 0 0; font-size: 12.5px; color: var(--text-light);">Overview of loyalty points balances for all active contacts</p>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="report-table" id="summaryTable">
+                <thead>
+                    <tr>
+                        <th style="width: 60px; text-align: center;">S.N.</th>
+                        <th>CONTACT NAME</th>
+                        <th style="text-align: right; width: 220px;">TOTAL POINTS BALANCE</th>
+                        <th style="text-align: right; width: 180px;">EQUIVALENT VALUE</th>
+                        <th style="text-align: center; width: 140px;">ACTION</th>
+                    </tr>
+                </thead>
+                <tbody id="summaryBody">
+                    <tr><td colspan="5" style="text-align: center; padding: 35px; color: var(--text-light); font-size: 13px;">
+                        <div class="loading-spinner"></div>
+                        <div style="margin-top: 10px;">Loading Points Summary...</div>
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Detail Mode (Contact Selected) -->
+    <div id="detailMode" class="ledger-statement-card" {% if selected_code %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+        
+        <!-- Header Info -->
+        <div class="card statement-header-card" style="border-radius: 14px; border: 1px solid var(--border-color); padding: 16px 20px; border-top: 4px solid #ec4899; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 16px;">
+            <div class="party-info-main">
+                <div class="party-badge-row" style="margin-bottom: 6px;">
+                    <span class="badge" style="background: rgba(236,72,153,0.1); color: #ec4899; border: 1px solid rgba(236,72,153,0.2); font-weight: 700; padding: 3px 10px; border-radius: 6px; font-size: 11px;">Points Ledger Statement</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <h2 id="lblContactName" class="statement-party-name" style="font-size: 20px; font-weight: 800; color: var(--text-main); margin: 0;">{{ selected_name or 'Loading...' }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Summary Cards Grid -->
+        <div class="ledger-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 16px;">
+            <div class="ledger-stat-card" style="background: var(--surface-card); border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border-color); border-left: 4px solid #0ea5e9; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                <span class="stat-title" style="font-size: 11px; font-weight: 700; color: var(--text-light); letter-spacing: 0.5px;">TOTAL POINTS IN (CR)</span>
+                <span id="lblPointsIn" class="stat-value" style="font-size: 20px; font-weight: 800; color: #0ea5e9; margin-top: 2px;">0.00</span>
+                <span id="lblValueIn" style="font-size: 11.5px; color: var(--text-light);">Val: ₹0.00</span>
+            </div>
+            <div class="ledger-stat-card" style="background: var(--surface-card); border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border-color); border-left: 4px solid #f43f5e; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                <span class="stat-title" style="font-size: 11px; font-weight: 700; color: var(--text-light); letter-spacing: 0.5px;">POINTS OUT (REDEEMED)</span>
+                <span id="lblPointsOut" class="stat-value" style="font-size: 20px; font-weight: 800; color: #f43f5e; margin-top: 2px;">0.00</span>
+                <span id="lblValueOut" style="font-size: 11.5px; color: var(--text-light);">Val: ₹0.00</span>
+            </div>
+            <div class="ledger-stat-card" style="background: var(--surface-card); border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border-color); border-left: 4px solid #d97706; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                <span class="stat-title" style="font-size: 11px; font-weight: 700; color: var(--text-light); letter-spacing: 0.5px;">EXPIRED POINTS</span>
+                <span id="lblExpiredPts" class="stat-value" style="font-size: 20px; font-weight: 800; color: #d97706; margin-top: 2px;">0.00</span>
+                <span id="lblExpiredVal" style="font-size: 11.5px; color: var(--text-light);">Val: ₹0.00</span>
+            </div>
+            <div class="ledger-stat-card" style="background: var(--surface-card); border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border-color); border-left: 4px solid #ec4899; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                <span class="stat-title" style="font-size: 11px; font-weight: 700; color: var(--text-light); letter-spacing: 0.5px;">CURRENT BALANCE</span>
+                <span id="lblPointsBal" class="stat-value" style="font-size: 20px; font-weight: 800; color: #ec4899; margin-top: 2px;">0.00</span>
+            </div>
+        </div>
+
+        <!-- Detail Table -->
+        <div class="card" style="box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); border-radius: 14px; border: 1px solid var(--border-color); overflow: hidden;">
+            <div class="table-responsive">
+                <table class="report-table" id="ledgerTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 90px;">DATE</th>
+                            <th style="width: 110px;">VCH NO.</th>
+                            <th style="width: 100px;">TYPE</th>
+                            <th style="text-align: right;">SALE AMOUNT</th>
+                            <th style="text-align: right; color: #0284c7;">POINTS IN (CR)</th>
+                            <th style="text-align: right; color: #0284c7;">IN VALUE</th>
+                            <th style="text-align: right; color: #e11d48;">POINTS OUT (DR)</th>
+                            <th style="text-align: right; color: #e11d48;">OUT VALUE</th>
+                            <th style="text-align: right; color: #d97706;">EXPIRED (DR)</th>
+                            <th style="text-align: right; color: #d97706;">EXPIRED VAL</th>
+                            <th style="text-align: right; color: #db2777;">BALANCE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerBody">
+                        <tr><td colspan="11" style="text-align: center; padding: 35px; color: var(--text-light); font-size: 13px;">
+                            <div class="loading-spinner"></div>
+                            <div style="margin-top: 10px;">Loading Ledger Transactions...</div>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+.dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    max-height: 250px;
+    overflow-y: auto;
+    margin-top: 4px;
+}
+.dropdown-list.hidden {
+    display: none;
+}
+.dropdown-item {
+    padding: 9px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 13px;
+}
+.dropdown-item:hover {
+    background: rgba(236, 72, 153, 0.08);
+    color: #ec4899;
+}
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.report-table th, .report-table td {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+}
+.report-table th {
+    background: rgba(0,0,0,0.02);
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--text-light);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--border-color);
+}
+.report-table tbody tr:hover td {
+    background: rgba(236, 72, 153, 0.03);
+}
+.view-btn {
+    background: rgba(236, 72, 153, 0.08);
+    color: #db2777;
+    border: 1px solid rgba(236, 72, 153, 0.2);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+}
+.view-btn:hover {
+    background: #db2777;
+    color: white;
+    border-color: #db2777;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(219, 39, 119, 0.25);
+}
+.loading-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid rgba(236, 72, 153, 0.2);
+    border-top-color: #ec4899;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let partiesList = [];
+    const searchInput = document.getElementById('partySearch');
+    const dropdown = document.getElementById('partyDropdown');
+    
+    // Check if we have an active selection from URL
+    const activeCode = parseInt('{{ selected_code or "0" }}');
+    
+    document.addEventListener("DOMContentLoaded", () => {
+        // Load contacts that have points for autocomplete
+        fetch('/api/point_ledger_summary')
+            .then(r => r.json())
+            .then(data => {
+                partiesList = data.map(item => ({
+                    code: item.party_code,
+                    name: item.party_name
+                }));
+                // Initialize autocomplete AFTER data is loaded
+                setupAutocomplete(searchInput, dropdown, partiesList, (selectedParty) => {
+                    window.location.href = `/points?code=${selectedParty.code}&name=${encodeURIComponent(selectedParty.name)}`;
+                });
+            });
+
+        // Load data based on state
+        if (activeCode > 0) {
+            loadLedgerDetail(activeCode);
+        } else {
+            loadLedgerSummary();
+        }
+    });
+    
+    function clearSelection() {
+        window.location.href = "/points";
+    }
+
+    function loadLedgerSummary() {
+        fetch('/api/point_ledger_summary')
+            .then(r => r.json())
+            .then(data => {
+                const tbody = document.getElementById('summaryBody');
+                tbody.innerHTML = '';
+                
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">No point balances found.</td></tr>';
+                    return;
+                }
+                
+                let html = '';
+                data.forEach((row, i) => {
+                    html += `
+                        <tr>
+                            <td style="text-align: center; color: var(--text-muted); font-size: 12px; font-weight: 600;">${i+1}</td>
+                            <td style="font-weight: 700; color: #1e293b; font-size: 13.5px;">${row.party_name}</td>
+                            <td style="text-align: right; font-weight: 800; color: #db2777; font-size: 14px;">${row.points.toFixed(2)}</td>
+                            <td style="text-align: right; font-family: monospace; font-size: 13.5px; font-weight: 600; color: #334155;">₹${row.value.toFixed(2)}</td>
+                            <td style="text-align: center;">
+                                <a href="/points?code=${row.party_code}&name=${encodeURIComponent(row.party_name)}" class="view-btn">🔍 View Ledger</a>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('summaryBody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Failed to load summary.</td></tr>';
+            });
+    }
+    
+    function loadLedgerDetail(code) {
+        fetch(`/api/point_ledger/${code}`)
+            .then(r => r.json())
+            .then(data => {
+                const tbody = document.getElementById('ledgerBody');
+                tbody.innerHTML = '';
+                
+                let totSale = 0;
+                let totIn = 0;
+                let totInVal = 0;
+                let totOut = 0;
+                let totOutVal = 0;
+                let totExpPts = 0;
+                let totExpVal = 0;
+                let finalBal = 0;
+                
+                if (!Array.isArray(data) || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; padding: 40px; color: var(--text-muted);">No point transactions found for this contact.</td></tr>';
+                } else {
+                    let html = '';
+                    const vtypeMap = {
+                        9: 'Sale', 14: 'Receipt', 3: 'Payment', 0: 'Opening'
+                    };
+                    
+                    data.forEach(r => {
+                        totSale += r.sale_amt || 0;
+                        totIn += r.points_in || 0;
+                        totInVal += r.in_value || 0;
+                        totOut += r.points_out || 0;
+                        totOutVal += r.out_value || 0;
+                        totExpPts += r.expired_pts || 0;
+                        totExpVal += r.expired_val || 0;
+                        finalBal = r.balance || 0;
+                        
+                        let fDate = r.date;
+                        let vtypeName = vtypeMap[r.vtype] || (r.vno ? `Type ${r.vtype}` : '');
+                        
+                        html += `
+                            <tr>
+                                <td style="color: var(--text-muted); font-size: 12.5px;">${fDate}</td>
+                                <td>${r.vno ? `<span class="badge" style="background: #f1f5f9; color: #334155; font-family: monospace; font-size: 12px; font-weight: 700;">${r.vno}</span>` : ''}</td>
+                                <td style="font-size: 12px; color: var(--text-secondary); font-weight: 600;">${vtypeName}</td>
+                                <td style="text-align: right; font-family: monospace; font-size: 13px;">${r.sale_amt > 0 ? r.sale_amt.toFixed(2) : '0.00'}</td>
+                                <td style="text-align: right; color: ${r.points_in > 0 ? '#0284c7' : '#94a3b8'}; font-weight: ${r.points_in > 0 ? '700' : '400'};">${r.points_in.toFixed(2)}</td>
+                                <td style="text-align: right; color: ${r.in_value > 0 ? '#0284c7' : '#94a3b8'}; font-family: monospace;">${r.in_value.toFixed(2)}</td>
+                                <td style="text-align: right; color: ${r.points_out > 0 ? '#e11d48' : '#94a3b8'}; font-weight: ${r.points_out > 0 ? '700' : '400'};">${r.points_out > 0 ? r.points_out.toFixed(2) : ''}</td>
+                                <td style="text-align: right; color: ${r.out_value > 0 ? '#e11d48' : '#94a3b8'}; font-family: monospace;">${r.out_value > 0 ? r.out_value.toFixed(2) : ''}</td>
+                                <td style="text-align: right; color: ${r.expired_pts > 0 ? '#d97706' : '#94a3b8'}; font-weight: ${r.expired_pts > 0 ? '700' : '400'};">${r.expired_pts.toFixed(2)}</td>
+                                <td style="text-align: right; color: ${r.expired_val > 0 ? '#d97706' : '#94a3b8'}; font-family: monospace;">${r.expired_val.toFixed(2)}</td>
+                                <td style="text-align: right; font-weight: 800; color: #db2777; font-family: monospace;">${r.balance.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    // Add footer row
+                    html += `
+                        <tr style="background: #fdf2f8; font-weight: 800; font-size: 13px;">
+                            <td colspan="3" style="text-align: right; color: #1e293b; padding-right: 16px;">TOTALS:</td>
+                            <td style="text-align: right; font-family: monospace;">${totSale.toFixed(2)}</td>
+                            <td style="text-align: right; color: #0284c7;">${totIn.toFixed(2)}</td>
+                            <td style="text-align: right; color: #0284c7; font-family: monospace;">${totInVal.toFixed(2)}</td>
+                            <td style="text-align: right; color: #e11d48;">${totOut.toFixed(2)}</td>
+                            <td style="text-align: right; color: #e11d48; font-family: monospace;">${totOutVal.toFixed(2)}</td>
+                            <td style="text-align: right; color: #d97706;">${totExpPts.toFixed(2)}</td>
+                            <td style="text-align: right; color: #d97706; font-family: monospace;">${totExpVal.toFixed(2)}</td>
+                            <td style="text-align: right; color: #db2777; font-family: monospace; font-size: 14px;">${finalBal.toFixed(2)}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML = html;
+                }
+                
+                // Update KPIs
+                document.getElementById('lblPointsIn').innerText = totIn.toFixed(2);
+                document.getElementById('lblValueIn').innerText = `Val: ₹${totInVal.toFixed(2)}`;
+                
+                document.getElementById('lblPointsOut').innerText = totOut.toFixed(2);
+                document.getElementById('lblValueOut').innerText = `Val: ₹${totOutVal.toFixed(2)}`;
+                
+                document.getElementById('lblExpiredPts').innerText = totExpPts.toFixed(2);
+                document.getElementById('lblExpiredVal').innerText = `Val: ₹${totExpVal.toFixed(2)}`;
+                
+                document.getElementById('lblPointsBal').innerText = finalBal.toFixed(2);
+                
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('ledgerBody').innerHTML = '<tr><td colspan="11" style="text-align: center; color: red;">Failed to load detail ledger.</td></tr>';
+            });
+    }
+
+    function setupAutocomplete(inputEl, dropdownEl, dataList, onSelect) {
+        let selectedIndex = -1;
+
+        function updateSelection(items) {
+            items.forEach((item, index) => {
+                if (index === selectedIndex) {
+                    item.classList.add('active');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        inputEl.addEventListener('input', function() {
+            const val = this.value.toLowerCase().trim();
+            dropdownEl.innerHTML = '';
+            selectedIndex = -1;
+            
+            if (!val) {
+                dropdownEl.classList.add('hidden');
+                return;
+            }
+            
+            const matches = dataList.filter(item => item.name.toLowerCase().includes(val)).slice(0, 50);
+            
+            if (matches.length === 0) {
+                dropdownEl.innerHTML = '<div style="padding: 12px; color: #94a3b8; text-align: center;">No matches found</div>';
+                dropdownEl.classList.remove('hidden');
+                return;
+            }
+            
+            matches.forEach((match, idx) => {
+                const div = document.createElement('div');
+                div.className = 'dropdown-item';
+                div.innerHTML = `
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-weight: 600; color: #1e293b;">${match.name}</span>
+                        <span style="font-size: 11px; color: #64748b;">Code: ${match.code} | Bal: ₹${match.closing_bal}</span>
+                    </div>
+                `;
+                div.addEventListener('click', () => {
+                    inputEl.value = match.name;
+                    dropdownEl.classList.add('hidden');
+                    selectedIndex = -1;
+                    onSelect(match);
+                });
+                div.addEventListener('mouseenter', () => {
+                    selectedIndex = idx;
+                    updateSelection(dropdownEl.querySelectorAll('.dropdown-item'));
+                });
+                dropdownEl.appendChild(div);
+            });
+            
+            dropdownEl.classList.remove('hidden');
+        });
+
+        inputEl.addEventListener('keydown', function(e) {
+            const items = dropdownEl.querySelectorAll('.dropdown-item');
+            if (dropdownEl.classList.contains('hidden') || items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (selectedIndex < items.length - 1) {
+                    selectedIndex++;
+                } else {
+                    selectedIndex = 0;
+                }
+                updateSelection(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (selectedIndex > 0) {
+                    selectedIndex--;
+                } else {
+                    selectedIndex = items.length - 1;
+                }
+                updateSelection(items);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedIndex >= 0 && selectedIndex < items.length) {
+                    items[selectedIndex].click();
+                } else if (items.length > 0 && !items[0].textContent.includes('No matches')) {
+                    items[0].click();
+                }
+            } else if (e.key === 'Escape') {
+                dropdownEl.classList.add('hidden');
+                selectedIndex = -1;
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!inputEl.contains(e.target) && !dropdownEl.contains(e.target)) {
+                dropdownEl.classList.add('hidden');
+                selectedIndex = -1;
+            }
+        });
+    }
+</script>
+{% endblock %}
+

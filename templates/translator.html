@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+{% block title %}AI Master Translator{% endblock %}
+{% block page_title %}AI Master Translator{% endblock %}
+{% block page_subtitle %}Translate Parties & Items to Hindi seamlessly using Gemini AI{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn-primary" onclick="translateMissing()" id="btnTranslateAll" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border-radius: 8px;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
+    Auto-Translate Missing
+</button>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+    .stat-card {
+        background: var(--bg-card);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        margin-top: 10px;
+    }
+    .stat-title {
+        color: var(--text-muted);
+        font-size: 12.5px;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+    .ai-loading {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        border-top-color: currentColor;
+        animation: spin 1s ease-in-out infinite;
+        vertical-align: middle;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    .search-input-wrapper {
+        position: relative;
+    }
+    .search-input-wrapper .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+    }
+    .search-input-wrapper .search-input {
+        padding-left: 40px;
+        border-radius: 20px;
+        height: 38px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Row -->
+<div class="stats-container">
+    <div class="stat-card">
+        <div class="stat-title">Total Masters</div>
+        <div class="stat-value" style="color: var(--text-primary);" id="totalCount">{{ masters|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Translated</div>
+        <div class="stat-value" style="color: var(--accent-emerald);" id="translatedCount">
+            {{ masters|selectattr('name_sl')|list|length }}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Missing Translation</div>
+        <div class="stat-value" style="color: var(--accent-rose);" id="missingCount">
+            {{ masters|rejectattr('name_sl')|list|length }}
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header" style="gap: 16px; flex-wrap: wrap;">
+        <div class="search-input-wrapper" style="flex: 1; min-width: 250px;">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="searchInput" class="form-control search-input" placeholder="Search masters by English or Hindi name...">
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-right: 8px;">
+            <input type="checkbox" id="filterMissing" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-indigo);">
+            <label for="filterMissing" style="color: var(--text-secondary); font-weight: 600; font-size: 13.5px; cursor: pointer; margin: 0;">Show Missing Only</label>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="data-table" id="mastersTable">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">TYPE</th>
+                    <th>ENGLISH NAME</th>
+                    <th>HINDI NAME (NameSL)</th>
+                    <th>STATUS</th>
+                    <th class="text-right">ACTION</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in masters %}
+                <tr class="master-row" data-name="{{ m.name|lower }} {{ m.name_sl|default('')|lower }}" data-has-hindi="{{ 'true' if m.name_sl else 'false' }}">
+                    <td>
+                        {% if m.type == 'Item' %}
+                            <span class="badge" style="background: rgba(14, 165, 233, 0.1); color: #0284c7;">Item</span>
+                        {% else %}
+                            <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">Party</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-weight: 600; color: var(--text-primary);">{{ m.name }}</td>
+                    <td class="hindi-cell" id="hindi_{{ m.code }}" style="font-size: 15px;">{{ m.name_sl or '' }}</td>
+                    <td id="status_{{ m.code }}">
+                        {% if m.name_sl %}
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #059669;">Translated</span>
+                        {% else %}
+                            <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: #dc2626;">Missing</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-right">
+                        <button class="btn btn-secondary translation-btn" 
+                                style="padding: 6px 14px; font-size: 12px;"
+                                data-master-code="{{ m.code }}"
+                                data-master-name="{{ m.name|e }}"
+                                onclick="translateSingle(this.getAttribute('data-master-code'), this.getAttribute('data-master-name'))" 
+                                id="btn_{{ m.code }}">
+                            Translate
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Search functionality will be initialized at the bottom
+
+    function filterTable() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const showMissingOnly = document.getElementById('filterMissing').checked;
+        const rows = document.querySelectorAll('.master-row');
+
+        rows.forEach(row => {
+            const searchData = row.getAttribute('data-name');
+            const hasHindi = row.getAttribute('data-has-hindi') === 'true';
+            
+            const matchesSearch = searchData.includes(searchTerm);
+            const matchesFilter = showMissingOnly ? !hasHindi : true;
+
+            if (matchesSearch && matchesFilter) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Single Translation
+    async function translateSingle(code, name) {
+        const btn = document.getElementById(`btn_${code}`);
+        const hindiCell = document.getElementById(`hindi_${code}`);
+        const statusCell = document.getElementById(`status_${code}`);
+        const trRow = btn.closest('tr');
+        
+        const originalBtnHtml = btn.innerHTML;
+        const originalBg = btn.style.background;
+        
+        btn.innerHTML = '<span class="ai-loading" style="border-top-color: var(--accent-indigo);"></span>';
+        btn.disabled = true;
+        
+        try {
+            const response = await fetch('/api/translate_master', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ master_code: code, name: name })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.status === 'ok') {
+                hindiCell.innerHTML = `<span style="color: var(--accent-emerald); font-weight: 700;" class="fade-in">${data.hindi}</span>`;
+                statusCell.innerHTML = `<span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #059669;">Translated</span>`;
+                trRow.setAttribute('data-has-hindi', 'true');
+                btn.innerHTML = 'Done';
+                btn.style.background = '#059669';
+                btn.style.color = 'white';
+                btn.style.border = 'none';
+                
+                // Only update counters if it was missing before
+                if (originalBtnHtml.includes('Translate')) {
+                    updateCounters(1);
+                }
+            } else {
+                alert(`Error: ${data.error}`);
+                btn.innerHTML = originalBtnHtml;
+                btn.disabled = false;
+            }
+        } catch (error) {
+            alert('Failed to connect to translation server.');
+            btn.innerHTML = originalBtnHtml;
+            btn.disabled = false;
+        }
+    }
+
+    // Bulk Translation
+    async function translateMissing() {
+        const missingRows = Array.from(document.querySelectorAll('.master-row[data-has-hindi="false"]'));
+        if (missingRows.length === 0) {
+            alert("Awesome! All items and parties are already translated to Hindi.");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to auto-translate ${missingRows.length} missing names using AI Batch Processing? This is much faster.`)) {
+            return;
+        }
+
+        const btnAll = document.getElementById('btnTranslateAll');
+        const originalBtnHtml = btnAll.innerHTML;
+        btnAll.disabled = true;
+
+        let successCount = 0;
+        const BATCH_SIZE = 30;
+        const totalBatches = Math.ceil(missingRows.length / BATCH_SIZE);
+        
+        for (let i = 0; i < totalBatches; i++) {
+            btnAll.innerHTML = `<span class="ai-loading me-2" style="border-top-color: white;"></span> Batch ${i+1}/${totalBatches} (${Math.round((i/totalBatches)*100)}%)`;
+            
+            const batchRows = missingRows.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
+            const items = batchRows.map(row => ({
+                code: row.querySelector('button').id.replace('btn_', ''),
+                name: row.querySelector('td:nth-child(2)').innerText.trim()
+            }));
+            
+            // Mark rows as loading
+            batchRows.forEach(row => {
+                const btn = row.querySelector('button');
+                btn.innerHTML = '<span class="ai-loading" style="border-top-color: var(--accent-indigo);"></span>';
+            });
+            
+            try {
+                const response = await fetch('/api/translate_master_bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items: items })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'ok') {
+                    // Update UI for each translated item
+                    data.results.forEach(res => {
+                        if (res.status === 'ok') {
+                            const hindiCell = document.getElementById(`hindi_${res.code}`);
+                            const statusCell = document.getElementById(`status_${res.code}`);
+                            const btn = document.getElementById(`btn_${res.code}`);
+                            const trRow = btn.closest('tr');
+                            
+                            hindiCell.innerHTML = `<span style="color: var(--accent-emerald); font-weight: 700;" class="fade-in">${res.hindi}</span>`;
+                            statusCell.innerHTML = `<span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #059669;">Translated</span>`;
+                            trRow.setAttribute('data-has-hindi', 'true');
+                            btn.innerHTML = 'Done';
+                            btn.style.background = '#059669';
+                            btn.style.color = 'white';
+                            btn.style.border = 'none';
+                            btn.disabled = true;
+                            successCount++;
+                            updateCounters(1);
+                        }
+                    });
+                } else {
+                    console.error("Batch error:", data.error);
+                }
+            } catch(e) {
+                console.error("Failed batch", i, e);
+            }
+            
+            // Wait 1.5 seconds between batches to avoid Gemini rate limit
+            await new Promise(r => setTimeout(r, 1500));
+        }
+
+        btnAll.innerHTML = `All ${successCount} Translated!`;
+        btnAll.style.background = '#059669';
+        
+        setTimeout(() => {
+            btnAll.innerHTML = originalBtnHtml;
+            btnAll.disabled = false;
+            btnAll.style.background = '';
+        }, 5000);
+    }
+    
+    function updateCounters(translatedCount) {
+        const translatedEl = document.getElementById('translatedCount');
+        const missingEl = document.getElementById('missingCount');
+        
+        translatedEl.innerText = parseInt(translatedEl.innerText) + translatedCount;
+        missingEl.innerText = parseInt(missingEl.innerText) - translatedCount;
+    }
+    
+    document.getElementById('searchInput').addEventListener('input', filterTable);
+    document.getElementById('filterMissing').addEventListener('change', filterTable);
+    filterTable();
+</script>
+{% endblock %}

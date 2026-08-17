@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Trial Balance{% endblock %}
+{% block page_title %}Trial Balance{% endblock %}
+{% block page_subtitle %}Sundry Debtors & Creditors balances{% endblock %}
+
+{% block content %}
+<div class="list-wrapper">
+
+    <!-- Header Stats -->
+    <div class="stats-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 16px;">
+        <div class="stat-card" style="background: var(--surface-card); border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid var(--border-color);">
+            <div class="stat-icon" style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);">👥</div>
+            <div class="stat-details" style="display: flex; flex-direction: column;">
+                <span class="stat-label" style="font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px;">Total Accounts</span>
+                <span class="stat-value" id="lblTotalAccounts" style="font-size: 22px; font-weight: 800; color: var(--text-main);">0</span>
+            </div>
+        </div>
+        <div class="stat-card" style="background: var(--surface-card); border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid var(--border-color);">
+            <div class="stat-icon" style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #059669); color: white; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);">💰</div>
+            <div class="stat-details" style="display: flex; flex-direction: column;">
+                <span class="stat-label" style="font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px;">Total Debit Balance</span>
+                <span class="stat-value" id="lblTotalDr" style="font-size: 22px; font-weight: 800; color: #10b981;">₹0.00</span>
+            </div>
+        </div>
+        <div class="stat-card" style="background: var(--surface-card); border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid var(--border-color);">
+            <div class="stat-icon" style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #f43f5e, #e11d48); color: white; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 10px rgba(244, 63, 94, 0.25);">💳</div>
+            <div class="stat-details" style="display: flex; flex-direction: column;">
+                <span class="stat-label" style="font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px;">Total Credit Balance</span>
+                <span class="stat-value" id="lblTotalCr" style="font-size: 22px; font-weight: 800; color: #f43f5e;">₹0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main List Card -->
+    <div class="card list-card" style="border-radius: 14px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div class="list-header" style="display: flex; gap: 12px; padding: 12px 18px; background: rgba(0,0,0,0.015); border-bottom: 1px solid var(--border-color); align-items: center; flex-wrap: wrap;">
+            <div class="search-box" style="position: relative; flex: 1; max-width: 380px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-light);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="searchInput" class="form-control" placeholder="Search accounts by name or group..." autocomplete="off" style="padding-left: 36px; height: 38px; border-radius: 20px; font-size: 13px;">
+            </div>
+            <select id="groupFilter" class="form-control" style="width: 200px; height: 38px; padding: 6px 12px; border-radius: 8px; font-size: 13px;">
+                <option value="">All Groups</option>
+            </select>
+        </div>
+
+        <div class="table-responsive">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">PARTICULARS / ACCOUNT NAME</th>
+                        <th style="width: 20%; text-align: left;">MOBILE NUMBER</th>
+                        <th style="width: 20%; text-align: right;">DEBIT BAL. (Dr)</th>
+                        <th style="width: 20%; text-align: right;">CREDIT BAL. (Cr)</th>
+                    </tr>
+                </thead>
+                <tbody id="tbBody">
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 35px;">
+                            <div class="loading-spinner"></div>
+                            <div style="color: var(--text-light); margin-top: 10px; font-size: 13px;">Loading Trial Balance...</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.list-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.report-table th, .report-table td {
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+}
+.report-table th {
+    background: rgba(0,0,0,0.02);
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--text-light);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--border-color);
+}
+.report-group-row {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.06) 100%) !important;
+    font-weight: 700;
+    color: #4338ca;
+}
+.report-group-row td {
+    padding: 9px 16px !important;
+    border-top: 1px solid rgba(99, 102, 241, 0.2) !important;
+    border-bottom: 1px solid rgba(99, 102, 241, 0.2) !important;
+}
+.group-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #4338ca;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.group-totals {
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.report-table tbody tr:not(.report-group-row):hover td {
+    background: rgba(99, 102, 241, 0.03);
+}
+.info-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.15);
+    color: #4338ca;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-left: 6px;
+    border: none;
+    transition: all 0.2s ease;
+    vertical-align: middle;
+}
+.info-icon-btn:hover {
+    background: #4f46e5;
+    color: #ffffff;
+    transform: scale(1.15);
+}
+.loading-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid rgba(99, 102, 241, 0.2);
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allBalances = [];
+
+    function formatMoney(amount) {
+        return parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    async function loadTrialBalance() {
+        try {
+            const response = await fetch('/api/trial_balance');
+            allBalances = await response.json();
+            
+            const groups = [...new Set(allBalances.map(i => i.group).filter(Boolean))].sort();
+            const groupSelect = document.getElementById('groupFilter');
+            if(groupSelect) {
+                groups.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g;
+                    opt.textContent = g;
+                    groupSelect.appendChild(opt);
+                });
+            }
+
+            renderTable(allBalances);
+        } catch (error) {
+            document.getElementById('tbBody').innerHTML = `
+                <tr><td colspan="4" style="text-align: center; color: var(--accent-rose); padding: 40px;">Failed to load trial balance.</td></tr>
+            `;
+            console.error('Error fetching trial balance:', error);
+        }
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('tbBody');
+        tbody.innerHTML = '';
+
+        let totalDr = 0;
+        let totalCr = 0;
+
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">No accounts found.</td></tr>';
+            document.getElementById('lblTotalAccounts').textContent = 0;
+            document.getElementById('lblTotalDr').textContent = '₹0.00';
+            document.getElementById('lblTotalCr').textContent = '₹0.00';
+            return;
+        }
+
+        // Group data
+        const grouped = {};
+        data.forEach(acc => {
+            const isDr = acc.dr_cr === "Dr";
+            if (isDr) totalDr += acc.amount;
+            else totalCr += acc.amount;
+            
+            const gName = acc.group || 'UNGROUPED';
+            if (!grouped[gName]) {
+                grouped[gName] = { accounts: [], dr: 0, cr: 0 };
+            }
+            grouped[gName].accounts.push(acc);
+            if (isDr) grouped[gName].dr += acc.amount;
+            else grouped[gName].cr += acc.amount;
+        });
+
+        const sortedGroups = Object.keys(grouped).sort();
+
+        sortedGroups.forEach(gName => {
+            const groupData = grouped[gName];
+            
+            // Add Group Header
+            const trGroup = document.createElement('tr');
+            trGroup.className = 'report-group-row';
+            trGroup.innerHTML = `
+                <td colspan="2">
+                    <div class="group-title">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        ${gName} (${groupData.accounts.length})
+                    </div>
+                </td>
+                <td style="text-align: right; color: #059669;" class="group-totals">${groupData.dr > 0 ? '₹' + formatMoney(groupData.dr) : '—'}</td>
+                <td style="text-align: right; color: #e11d48;" class="group-totals">${groupData.cr > 0 ? '₹' + formatMoney(groupData.cr) : '—'}</td>
+            `;
+            tbody.appendChild(trGroup);
+
+            // Sort accounts in group by amount descending (highest balance first)
+            groupData.accounts.sort((a, b) => b.amount - a.amount);
+
+            // Add Accounts
+            groupData.accounts.forEach(acc => {
+                const isDr = acc.dr_cr === "Dr";
+                const tr = document.createElement('tr');
+                
+                let mobileText = '—';
+                if (acc.mobile && acc.mobile.trim() && acc.mobile !== '—') {
+                    mobileText = acc.mobile.trim();
+                }
+
+                tr.innerHTML = `
+                    <td style="padding-left: 28px;">
+                        <a href="/ledger?code=${acc.code}&name=${encodeURIComponent(acc.name)}" style="font-weight: 600; font-size: 13px; color: #3730a3; text-decoration: none; transition: color 0.15s;" onmouseover="this.style.color='#4f46e5'; this.style.textDecoration='underline'" onmouseout="this.style.color='#3730a3'; this.style.textDecoration='none'">
+                            ${acc.name}
+                        </a>
+                    </td>
+                    <td style="text-align: left; font-size: 12px; color: var(--text-secondary); font-weight: 500;">
+                        ${mobileText}
+                    </td>
+                    <td style="text-align: right; font-weight: 600; font-size: 13px; font-variant-numeric: tabular-nums; color: ${isDr ? '#059669' : '#94a3b8'};">
+                        ${isDr ? '₹' + formatMoney(acc.amount) : '—'}
+                    </td>
+                    <td style="text-align: right; font-weight: 600; font-size: 13px; font-variant-numeric: tabular-nums; color: ${!isDr ? '#e11d48' : '#94a3b8'};">
+                        ${!isDr ? '₹' + formatMoney(acc.amount) : '—'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+
+        document.getElementById('lblTotalAccounts').textContent = data.length;
+        document.getElementById('lblTotalDr').textContent = '₹' + formatMoney(totalDr);
+        document.getElementById('lblTotalCr').textContent = '₹' + formatMoney(totalCr);
+    }
+
+    function applyFilters() {
+        const term = document.getElementById('searchInput').value.toLowerCase().trim();
+        const groupFilterValue = document.getElementById('groupFilter').value;
+        
+        const filtered = allBalances.filter(a => {
+            const matchesText = !term || a.name.toLowerCase().includes(term) || (a.group && a.group.toLowerCase().includes(term));
+            const matchesGroup = groupFilterValue ? a.group === groupFilterValue : true;
+            return matchesText && matchesGroup;
+        });
+        
+        renderTable(filtered);
+    }
+
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('groupFilter').addEventListener('change', applyFilters);
+
+    // Load data on page ready
+    document.addEventListener('DOMContentLoaded', loadTrialBalance);
+</script>
+{% endblock %}
+

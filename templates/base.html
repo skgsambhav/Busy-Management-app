@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Buswin App{% endblock %} | GOPAL MARKETING</title>
+    <meta name="description" content="Remote Buswin App for Busy Win Accounting">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="logo-text">
+                <span class="logo-main">Buswin App</span>
+                <span class="logo-sub">GOPAL MARKETING</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <!-- Dashboard -->
+            <a href="{{ url_for('dashboard.dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard.dashboard' %}active{% endif %}">
+                <div class="nav-icon" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                </div>
+                <span>Dashboard</span>
+            </a>
+
+            <!-- Receipts Group -->
+            <div class="nav-group {% if request.endpoint in ['receipts.receipt_new', 'receipts.receipt_list', 'analyzer.analyzer_view'] %}open{% endif %}">
+                <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                    <div class="nav-icon" style="background: rgba(14, 165, 233, 0.1); color: #0284c7;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    </div>
+                    <span>Receipts</span>
+                    <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="nav-group-items">
+                    <a href="{{ url_for('receipts.receipt_new') }}" class="nav-item {% if request.endpoint == 'receipts.receipt_new' %}active{% endif %}">
+                        <span>New Receipt</span>
+                    </a>
+                    <a href="{{ url_for('receipts.receipt_list') }}" class="nav-item {% if request.endpoint == 'receipts.receipt_list' %}active{% endif %}">
+                        <span>All Receipts</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Purchase Group -->
+            <div class="nav-group {% if request.endpoint in ['ng_purchase.ng_purchase_page', 'gst_purchase.gst_purchase_page'] %}open{% endif %}">
+                <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                    <div class="nav-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                    </div>
+                    <span>Purchase</span>
+                    <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="nav-group-items">
+                    <a href="{{ url_for('ng_purchase.ng_purchase_page') }}" class="nav-item {% if request.endpoint == 'ng_purchase.ng_purchase_page' %}active{% endif %}">
+                        <span>Non-GST Purchase Entry</span>
+                    </a>
+                    <a href="{{ url_for('gst_purchase.gst_purchase_page') }}" class="nav-item {% if request.endpoint == 'gst_purchase.gst_purchase_page' %}active{% endif %}">
+                        <span>GST Purchase Entry</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Sales Group -->
+            <div class="nav-group {% if request.endpoint in ['sales.sales_page'] %}open{% endif %}">
+                <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                    <div class="nav-icon" style="background: rgba(244, 63, 94, 0.1); color: #f43f5e;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22 6 12 13 2 6"></polyline></svg>
+                    </div>
+                    <span>Sales</span>
+                    <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="nav-group-items">
+                    <a href="{{ url_for('sales.sales_page') }}" class="nav-item {% if request.endpoint == 'sales.sales_page' %}active{% endif %}">
+                        <span>Sales Entry</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Master Group -->
+            <div class="nav-group {% if request.endpoint in ['items.items_list', 'translator.ai_translator_page'] %}open{% endif %}">
+                <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                    <div class="nav-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    </div>
+                    <span>Master</span>
+                    <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="nav-group-items">
+                    <a href="{{ url_for('items.items_list') }}" class="nav-item {% if request.endpoint == 'items.items_list' %}active{% endif %}">
+                        <span>Item Master</span>
+                    </a>
+                    <a href="{{ url_for('translator.ai_translator_page') }}" class="nav-item {% if request.endpoint == 'translator.ai_translator_page' %}active{% endif %}">
+                        <span>AI Master Translator</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Reports Group -->
+            <div class="nav-group {% if request.endpoint in ['ledger.ledger_view', 'ledger.trial_balance_view', 'points.points_ledger_view', 'points.point_analytics_view', 'hdfc_reports.hdfc_page'] %}open{% endif %}">
+                <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                    <div class="nav-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    </div>
+                    <span>Reports</span>
+                    <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="nav-group-items">
+                    <a href="{{ url_for('ledger.ledger_view') }}" class="nav-item {% if request.endpoint == 'ledger.ledger_view' %}active{% endif %}">
+                        <span>Account Ledger</span>
+                    </a>
+                    <a href="{{ url_for('ledger.trial_balance_view') }}" class="nav-item {% if request.endpoint == 'ledger.trial_balance_view' %}active{% endif %}">
+                        <span>Trial Balance</span>
+                    </a>
+                    <a href="{{ url_for('points.points_ledger_view') }}" class="nav-item {% if request.endpoint == 'points.points_ledger_view' %}active{% endif %}">
+                        <span>Point Ledger</span>
+                    </a>
+                    <a href="{{ url_for('points.point_analytics_view') }}" class="nav-item {% if request.endpoint == 'points.point_analytics_view' %}active{% endif %}">
+                        <span>Points Analytics</span>
+                    </a>
+                    <a href="{{ url_for('hdfc_reports.hdfc_page') }}" class="nav-item {% if request.endpoint == 'hdfc_reports.hdfc_page' %}active{% endif %}">
+                        <span>HDFC Transactions</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Sales Group -->
+            <div class="nav-group {% if request.endpoint in ['sales.daybook_view', 'sales.sales_vouchers_view', 'analyzer.scrutiny_analyzer_view', 'analyzer.item_analysis_view'] %}open{% endif %}">
+                <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                    <div class="nav-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    </div>
+                    <span>Sales</span>
+                    <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="nav-group-items">
+                    <a href="{{ url_for('sales.daybook_view') }}" class="nav-item {% if request.endpoint == 'sales.daybook_view' %}active{% endif %}">
+                        <span>Day Book</span>
+                    </a>
+                    <a href="{{ url_for('sales.sales_vouchers_view') }}" class="nav-item {% if request.endpoint == 'sales.sales_vouchers_view' %}active{% endif %}">
+                        <span>Sales Register</span>
+                    </a>
+                    <a href="{{ url_for('analyzer.scrutiny_analyzer_view') }}" class="nav-item {% if request.endpoint == 'analyzer.scrutiny_analyzer_view' %}active{% endif %}">
+                        <span>Scrutiny Analyzer</span>
+                    </a>
+                    <a href="{{ url_for('analyzer.item_analysis_view') }}" class="nav-item {% if request.endpoint == 'analyzer.item_analysis_view' %}active{% endif %}">
+                        <span>Item Wise Analysis</span>
+                    </a>
+                </div>
+            </div>
+
+
+
+            <!-- Performance Analytics Group -->
+            <div class="nav-group {% if request.endpoint in ['analyzer.performance_view', 'analyzer.users_view', 'analyzer.employees_view'] %}open{% endif %}">
+                <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                    <div class="nav-icon" style="background: rgba(34, 197, 94, 0.1); color: #22c55e;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    </div>
+                    <span>Performance</span>
+                    <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="nav-group-items">
+                    <a href="{{ url_for('analyzer.performance_view') }}" class="nav-item {% if request.endpoint == 'analyzer.performance_view' %}active{% endif %}">
+                        <span>Company</span>
+                    </a>
+                    <a href="{{ url_for('analyzer.users_view') }}" class="nav-item {% if request.endpoint == 'analyzer.users_view' %}active{% endif %}">
+                        <span>Users</span>
+                    </a>
+                    <a href="{{ url_for('analyzer.employees_view') }}" class="nav-item {% if request.endpoint == 'analyzer.employees_view' %}active{% endif %}">
+                        <span>Employees</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- GM Management Group -->
+            <div class="nav-group {% if request.endpoint in ['gm.gm_out_view'] %}open{% endif %}">
+                <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                    <div class="nav-icon" style="background: rgba(236, 72, 153, 0.1); color: #ec4899;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                    </div>
+                    <span>GM Management</span>
+                    <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="nav-group-items">
+                    <a href="{{ url_for('gm.gm_out_view') }}" class="nav-item {% if request.endpoint == 'gm.gm_out_view' %}active{% endif %}">
+                        <span>GM-OUT</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Settings Group -->
+            <div class="nav-group {% if request.endpoint in ['settings.settings_whatsapp_view', 'settings.settings_gmail_view', 'notifications.notifications_view', 'printer.printer_page'] %}open{% endif %}">
+                <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                    <div class="nav-icon" style="background: rgba(100, 116, 139, 0.1); color: #64748b;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </div>
+                    <span>Settings</span>
+                    <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="nav-group-items">
+                    <a href="{{ url_for('settings.settings_whatsapp_view') }}" class="nav-item {% if request.endpoint == 'settings.settings_whatsapp_view' %}active{% endif %}">
+                        <span>WhatsApp Config</span>
+                    </a>
+                    <a href="{{ url_for('notifications.notifications_view') }}" class="nav-item {% if request.endpoint == 'notifications.notifications_view' %}active{% endif %}">
+                        <span>Weekly Notifications</span>
+                    </a>
+                    <a href="{{ url_for('settings.settings_gmail_view') }}" class="nav-item {% if request.endpoint == 'settings.settings_gmail_view' %}active{% endif %}">
+                        <span>Gmail App Setting</span>
+                    </a>
+                    <a href="{{ url_for('printer.printer_page') }}" class="nav-item {% if request.endpoint == 'printer.printer_page' %}active{% endif %}">
+                        <span>Printer Settings</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="company-badge">
+                <div class="company-dot"></div>
+                <span>COMP0002 · FY 2026-27</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <div class="topbar">
+            <div class="topbar-left">
+                <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                <p class="page-subtitle">{% block page_subtitle %}Overview of receipt activity{% endblock %}</p>
+            </div>
+            <div class="topbar-right" style="display: flex; gap: 12px; align-items: center;">
+                <button type="button" class="btn btn-secondary" onclick="location.reload()" title="Refresh Page" style="padding: 10px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2.66 8.43a10 10 0 1 1 18.68 7.14"/></svg>
+                </button>
+                {% block topbar_actions %}
+                {% endblock %}
+            </div>
+        </div>
+
+        <div class="content-area">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast" role="alert"></div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+

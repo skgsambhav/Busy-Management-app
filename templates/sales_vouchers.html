@@ -1,0 +1,932 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Register{% endblock %}
+{% block page_title %}Sales Register & Vouchers{% endblock %}
+{% block page_subtitle %}View daily sales vouchers and line-item details from Busy Accounting{% endblock %}
+
+{% block content %}
+<div class="sales-wrapper">
+
+    <!-- Date & Action Header Bar -->
+    <div class="card date-filter-card">
+        <div class="date-filter-body">
+            <div class="date-input-group">
+                <label for="salesDate" class="date-label">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    SELECT SALES DATE:
+                </label>
+                <input type="date" id="salesDate" class="form-control date-picker-input">
+                <button id="btnLoadSales" onclick="loadSalesVouchers()" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; padding: 8px 18px; font-weight: 600;">
+                    Load Sales
+                </button>
+            </div>
+            
+            <div class="date-presets">
+                <button onclick="setPresetDate('today')" class="btn-preset active" id="btnToday">Today</button>
+                <button onclick="setPresetDate('yesterday')" class="btn-preset" id="btnYesterday">Yesterday</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Summary Cards -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon icon-emerald">📑</div>
+            <div class="stat-details">
+                <span class="stat-label">TOTAL SALES VOUCHERS</span>
+                <span class="stat-value" id="lblTotalVouchers">0</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-indigo">💰</div>
+            <div class="stat-details">
+                <span class="stat-label">TOTAL SALES AMOUNT</span>
+                <span class="stat-value" id="lblTotalSalesAmt" style="color: #059669;">₹0.00</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-emerald">💵</div>
+            <div class="stat-details">
+                <span class="stat-label">CASH SALES</span>
+                <span class="stat-value" id="lblTotalCashSales" style="color: #059669;">₹0.00</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-rose">💳</div>
+            <div class="stat-details">
+                <span class="stat-label">CREDIT SALES</span>
+                <span class="stat-value" id="lblTotalCreditSales" style="color: #e11d48;">₹0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Sales List Card -->
+    <div class="card list-card">
+        <div class="list-header">
+            <div class="search-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="searchInput" class="form-control" placeholder="Search by Vch No or Party Name..." autocomplete="off">
+            </div>
+            <span id="lblCurrentDateBadge" class="badge badge-emerald" style="font-size: 13px; padding: 8px 14px;">Loading...</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th style="width: 7%;">DATE</th>
+                        <th style="width: 8%;">VCH NO</th>
+                        <th style="width: 6%;">USER</th>
+                        <th style="width: 15%;">ACCOUNT NAME</th>
+                        <th style="width: 9%;">SALESMAN</th>
+                        <th style="width: 8%;">BILLED BY</th>
+                        <th style="width: 8%;">PACKED BY</th>
+                        <th style="width: 7%; text-align: center;">STATUS</th>
+                        <th style="width: 9%; text-align: right;">BILL AMOUNT (₹)</th>
+                        <th style="width: 8%; text-align: right;">CASH / BANK (₹)</th>
+                        <th style="width: 8%; text-align: right;">PENDING (₹)</th>
+                        <th style="width: 7%; text-align: center;">ACTION</th>
+                    </tr>
+                </thead>
+                <tbody id="salesBody">
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 40px;">
+                            <div class="loading-spinner"></div>
+                            <div style="color: var(--text-muted); margin-top: 10px;">Loading Sales Vouchers...</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Voucher Detail Modal (Busy Style) -->
+<div id="voucherModalOverlay" class="modal-overlay" style="display: none;"></div>
+<div id="voucherModal" class="modal busy-voucher-modal" style="display: none; width: 880px; max-width: 95vw; padding: 0; border-radius: 12px; overflow: hidden; background: #f0fdf4; max-height: 90vh; flex-direction: column;">
+    
+    <!-- Busy Voucher Window Header -->
+    <div class="busy-modal-header" style="background: linear-gradient(135deg, #064e3b 0%, #047857 100%); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 12px;">Sales Voucher</span>
+            <h3 id="vchModalNo" style="margin: 0; font-size: 18px; font-weight: 800;">GM3228</h3>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <button onclick="downloadInvoicePDF(this)" class="btn" style="background: white; color: #047857; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Download Invoice
+            </button>
+            <button onclick="closeVoucherModal()" style="background: transparent; border: none; color: white; font-size: 20px; cursor: pointer; padding: 0 6px;">✕</button>
+        </div>
+    </div>
+
+    <!-- Voucher Form Fields Header -->
+    <div style="padding: 16px 20px; background: #ffffff; border-bottom: 1px solid #e2e8f0; flex-shrink: 0;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 8px;">
+            <div>
+                <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Series</label>
+                <div id="vchModalSeries" style="font-weight: 700; font-size: 14px; color: #1e293b;">Main</div>
+            </div>
+            <div>
+                <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Date</label>
+                <div id="vchModalDate" style="font-weight: 700; font-size: 14px; color: #1e293b;">20-07-2026</div>
+            </div>
+            <div>
+                <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Sale Type</label>
+                <div id="vchModalSaleType" style="font-weight: 700; font-size: 14px; color: #047857;">L/GST-Exempt</div>
+            </div>
+        </div>
+        <div>
+            <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Party Account</label>
+            <div id="vchModalParty" style="font-weight: 800; font-size: 16px; color: #0f172a;">BHARAT LAL - SALKA</div>
+        </div>
+    </div>
+
+    <!-- Scrollable Body (Items + Bill Sundries) -->
+    <div style="padding: 16px 20px; max-height: 38vh; overflow-y: auto; flex: 1;">
+        <!-- Items Table -->
+        <table class="report-table" style="background: white;">
+            <thead>
+                <tr style="background: #f1f5f9;">
+                    <th style="width: 8%; text-align: center;">S.N.</th>
+                    <th style="width: 44%;">ITEM NAME</th>
+                    <th style="width: 14%; text-align: right;">QTY.</th>
+                    <th style="width: 12%; text-align: center;">UNIT</th>
+                    <th style="width: 14%; text-align: right;">PRICE (Rs.)</th>
+                    <th style="width: 18%; text-align: right;">AMOUNT (Rs.)</th>
+                </tr>
+            </thead>
+            <tbody id="vchModalItemsBody">
+                <!-- Items populated dynamically -->
+            </tbody>
+            <tfoot>
+                <tr style="background: #ecfdf5; font-weight: 700; border-top: 2px solid #a7f3d0;">
+                    <td colspan="2" style="text-align: right; font-weight: 800;">TOTALS:</td>
+                    <td style="text-align: right; font-weight: 800; color: #047857;" id="vchModalTotalQty">0.00</td>
+                    <td style="text-align: center;"></td>
+                    <td></td>
+                    <td style="text-align: right; font-weight: 800; color: #047857;" id="vchModalTotalAmt">₹0.00</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Bill Sundry Section -->
+        <div id="vchModalSundryContainer" style="display: none; margin-top: 16px;">
+            <div style="font-size: 12px; font-weight: 700; color: #9a3412; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                Bill Sundry / Extra Charges / Discounts
+            </div>
+            <table class="report-table" style="background: #fff8f6; border-color: #ffedd5;">
+                <thead>
+                    <tr style="background: #fff7ed;">
+                        <th style="width: 10%; text-align: center;">S.N.</th>
+                        <th style="width: 70%;">BILL SUNDRY NAME</th>
+                        <th style="width: 20%; text-align: right;">AMOUNT (Rs.)</th>
+                    </tr>
+                </thead>
+                <tbody id="vchModalSundryBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- WhatsApp Sending Panel -->
+    <div style="background: #f0fdf4; border-top: 1px solid #bbf7d0; padding: 10px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 13px; font-weight: 700; color: #047857;">📞 Send via WhatsApp:</span>
+        </div>
+        <div style="display: flex; gap: 8px; flex: 1; align-items: center; min-width: 300px;">
+            <input type="text" id="vchWhatsappPhone" class="form-control" style="width: 140px; height: 34px; padding: 4px 8px; font-size: 13px; border-radius: 6px; border: 1px solid #86efac;" placeholder="Mobile Number">
+            <button id="vchSendPdfWhatsappBtn" onclick="sendVchInvoiceLink()" class="btn btn-primary" style="height: 34px; font-size: 13px; font-weight: 700; background: #7c3aed; border: none; padding: 0 12px; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+                🔗 Send Invoice Link
+            </button>
+        </div>
+    </div>
+
+    <!-- Voucher Footer / Grand Total -->
+    <div style="background: #ffffff; padding: 14px 20px; border-top: 2px solid #bbf7d0; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+        <button class="btn btn-ghost" onclick="closeVoucherModal()">Close Window</button>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 15px; font-weight: 700; color: #334155;">Grand Total:</span>
+            <span id="vchModalGrandTotal" style="font-size: 24px; font-weight: 900; color: #047857;">₹0.00</span>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden PDF Invoice Template -->
+<div id="pdfWrapper" style="display: none;">
+    <div id="invoicePrintTemplate" style="width: 800px; padding: 20px; background: white; font-family: 'Inter', 'Noto Sans Devanagari', sans-serif; color: #000; position: relative;">
+        <!-- Outstanding Ribbon -->
+        <div id="invRibbon" style="position: absolute; top: 35px; left: -15px; background: #60a5fa; color: white; padding: 4px 35px; transform: rotate(-45deg); font-weight: bold; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">Outstanding</div>
+
+        <div style="border: 1px solid #000;">
+            <!-- Header Section -->
+            <table style="width: 100%; border-collapse: collapse; border-bottom: 1px solid #000;">
+                <tr>
+                    <td style="width: 35%; border-right: 1px solid #000; padding: 6px 10px; vertical-align: top;">
+                        <table style="width: 100%; font-size: 11px; font-weight: 600;">
+                            <tr><td style="padding: 1px 0;">Estimate #</td><td>: <span id="invVchNo"></span></td></tr>
+                            <tr><td style="padding: 1px 0;">Date</td><td>: <span id="invDate"></span></td></tr>
+                        </table>
+                    </td>
+                    <td style="width: 35%; border-right: 1px solid #000; padding: 6px 10px; text-align: center; vertical-align: top;">
+                        <div style="font-size: 16px; font-weight: 800;" id="invTopBalance"></div>
+                    </td>
+                    <td style="width: 30%; padding: 6px 10px; vertical-align: top; position: relative;">
+                        <div style="position: absolute; top: 6px; right: 10px; font-size: 11px; font-weight: bold;">INVOICE</div>
+                        <div style="font-size: 11px; margin-top: 15px;">
+                            <!-- Empty block for future details if needed -->
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Party Details Section -->
+            <div style="padding: 6px 10px; border-bottom: 1px solid #000; background: #f9f9f9;">
+                <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px;">For</div>
+                <div style="font-size: 16px; font-weight: 900;" id="invPartyNameBlock"></div>
+                <div style="font-size: 12px; margin-top: 2px;" id="invPartyAddressBlock"></div>
+            </div>
+
+            <!-- Items Table -->
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #000; background: #f0f0f0;">
+                        <th style="padding: 5px; border-right: 1px solid #000; text-align: center; width: 5%; font-size: 11px;">#</th>
+                        <th style="padding: 5px; border-right: 1px solid #000; text-align: left; width: 38%; font-size: 11px;">नाम</th>
+                        <th style="padding: 5px; border-right: 1px solid #000; text-align: center; width: 12%; font-size: 11px;">Qty</th>
+                        <th style="padding: 5px; border-right: 1px solid #000; text-align: center; width: 12%; font-size: 11px;">यूनिट</th>
+                        <th style="padding: 5px; border-right: 1px solid #000; text-align: right; width: 15%; font-size: 11px;">रेट</th>
+                        <th style="padding: 5px; text-align: right; width: 18%; font-size: 11px;">टोटल</th>
+                    </tr>
+                </thead>
+                <tbody id="invItemsBody">
+                </tbody>
+            </table>
+            
+            <!-- Footer Section -->
+            <table style="width: 100%; border-collapse: collapse; border-top: 1px solid #000;">
+                <tr>
+                    <td style="width: 60%; padding: 10px; border-right: 1px solid #000; vertical-align: bottom;">
+                        <div id="invSundriesContainer" style="font-size: 12px; font-weight: 600; margin-bottom: 15px;"></div>
+                        <div style="font-size: 10px;" id="invFooterShopText"></div>
+                    </td>
+                    <td style="width: 40%; padding: 10px; vertical-align: top;">
+                        <table style="width: 100%; font-size: 16px; font-weight: 800;">
+                            <tr>
+                                <td style="text-align: right; padding: 4px;">टोटल</td>
+                                <td style="text-align: right; padding: 4px;" id="invGrandTotal"></td>
+                            </tr>
+                            <tr>
+                                <td style="text-align: right; padding: 4px;">पर्चा_बाकी</td>
+                                <td style="text-align: right; padding: 4px;" id="invParchaBaki"></td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.sales-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.date-filter-card {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 24px;
+}
+.date-filter-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+.date-input-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.date-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.date-picker-input {
+    width: 160px;
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-weight: 600;
+}
+.date-presets {
+    display: flex;
+    gap: 8px;
+}
+.btn-preset {
+    background: #f1f5f9;
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-preset:hover, .btn-preset.active {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border-color: #a7f3d0;
+}
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+.stat-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border);
+}
+.stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+.icon-emerald { background: rgba(16, 185, 129, 0.12); }
+.icon-indigo { background: rgba(99, 102, 241, 0.12); }
+.icon-amber { background: rgba(245, 158, 11, 0.12); }
+.icon-purple { background: rgba(168, 85, 247, 0.12); }
+
+.stat-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+}
+.stat-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+.list-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.list-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: #fafafa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.search-box {
+    position: relative;
+    width: 360px;
+}
+.search-box svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+.search-box input {
+    padding-left: 38px;
+    border-radius: 20px;
+}
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    color: #1e293b;
+}
+.report-table th, .report-table td {
+    padding: 9px 14px;
+    border: 1px solid #e2e8f0;
+    vertical-align: middle;
+}
+.report-table th {
+    background: #f8fafc;
+    font-weight: 700;
+    font-size: 12px;
+    color: #475569;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.report-table tbody tr:hover {
+    background: #f8fafc;
+}
+.view-btn {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.view-btn:hover {
+    background: #047857;
+    color: white;
+}
+.loading-spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(16, 185, 129, 0.2);
+    border-top-color: #10b981;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    let allSalesVouchers = [];
+    let companyInfo = null;
+
+    async function fetchCompanyInfo() {
+        try {
+            const res = await fetch('/api/company_info');
+            companyInfo = await res.json();
+            
+            if (companyInfo && !companyInfo.error) {
+                document.getElementById('invCompName').textContent = companyInfo.name || 'COMPANY NAME';
+                
+                let addrHTML = '';
+                if (companyInfo.address1) addrHTML += companyInfo.address1 + '<br>';
+                if (companyInfo.address2) addrHTML += companyInfo.address2 + '<br>';
+                if (companyInfo.phone) addrHTML += 'Ph: ' + companyInfo.phone;
+                
+                document.getElementById('invCompAddress').innerHTML = addrHTML;
+            }
+        } catch(e) {
+            console.error('Failed to load company info', e);
+        }
+    }
+
+    function formatMoney(amount) {
+        return parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function setPresetDate(preset) {
+        const today = new Date();
+        document.getElementById('btnToday').classList.remove('active');
+        document.getElementById('btnYesterday').classList.remove('active');
+
+        if (preset === 'today') {
+            document.getElementById('btnToday').classList.add('active');
+            document.getElementById('salesDate').value = today.toISOString().split('T')[0];
+        } else if (preset === 'yesterday') {
+            document.getElementById('btnYesterday').classList.add('active');
+            const yest = new Date(today);
+            yest.setDate(yest.getDate() - 1);
+            document.getElementById('salesDate').value = yest.toISOString().split('T')[0];
+        }
+        loadSalesVouchers();
+    }
+
+    async function loadSalesVouchers() {
+        const dateInput = document.getElementById('salesDate').value;
+        if (!dateInput) return;
+
+        const tbody = document.getElementById('salesBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10" style="text-align: center; padding: 40px;">
+                    <div class="loading-spinner"></div>
+                    <div style="color: var(--text-muted); margin-top: 10px;">Loading Sales Vouchers for ${dateInput}...</div>
+                </td>
+            </tr>
+        `;
+
+        try {
+            const response = await fetch(`/api/sales_vouchers?date=${dateInput}`);
+            allSalesVouchers = await response.json();
+            renderTable(allSalesVouchers);
+            
+            // Format badge date (e.g. 20-07-2026)
+            const parts = dateInput.split('-');
+            const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            document.getElementById('lblCurrentDateBadge').textContent = `Sales Date: ${formattedDate}`;
+        } catch (error) {
+            tbody.innerHTML = `
+                <tr><td colspan="10" style="text-align: center; color: var(--accent-rose); padding: 40px;">Failed to load sales vouchers.</td></tr>
+            `;
+            console.error('Error fetching sales vouchers:', error);
+        }
+    }
+
+    function renderTable(vouchers) {
+        const tbody = document.getElementById('salesBody');
+        tbody.innerHTML = '';
+
+        let totalSalesAmt = 0;
+        let totalCashSales = 0;
+        let totalCreditSales = 0;
+
+        if (vouchers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: var(--text-muted);">No sales vouchers found for this date.</td></tr>';
+        } else {
+            vouchers.forEach(item => {
+                totalSalesAmt += item.total_amount || 0;
+                if (item.is_cash) {
+                    totalCashSales += item.total_amount || 0;
+                } else {
+                    totalCreditSales += item.total_amount || 0;
+                }
+
+                const isCash = item.is_cash;
+                const tr = document.createElement('tr');
+                if (isCash) {
+                    tr.style.background = '#f0fdf4';
+                }
+                let fDate = item.date;
+
+                tr.innerHTML = `
+                    <td style="font-weight: 500; color: var(--text-secondary); font-size: 13px;">${fDate}</td>
+                    <td>
+                        <a href="javascript:void(0)" onclick="openVoucherModal(${item.vcode})" class="badge ${isCash ? 'badge-emerald' : 'badge-rose'}" style="font-family: monospace; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.15s;" onmouseover="this.style.transform='scale(1.05)';" onmouseout="this.style.transform='none';" title="Click to view bill">
+                            📄 ${item.vno}
+                        </a>
+                    </td>
+                    <td style="font-size: 11px; font-weight: 700; color: #6366f1;">
+                        ${item.busy_user || 'ADMIN'}
+                    </td>
+                    <td>
+                        <a href="/ledger?code=${item.party_code}&name=${encodeURIComponent(item.party_name)}" style="font-weight: 700; font-size: 13px; color: ${isCash ? '#047857' : '#3730a3'}; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                            ${item.party_name}
+                        </a>
+                    </td>
+                    <td style="font-size: 11px; font-weight: 600; color: #475569; letter-spacing: 0.02em;">
+                        ${item.salesman || '—'}
+                    </td>
+                    <td style="font-size: 11px; font-weight: 600; color: #475569; letter-spacing: 0.02em;">
+                        ${item.billed_by || '—'}
+                    </td>
+                    <td style="font-size: 11px; font-weight: 600; color: #475569; letter-spacing: 0.02em;">
+                        ${item.packed_by || '—'}
+                    </td>
+                    <td style="font-size: 11px; font-weight: 700; text-align: center; color: ${item.bill_status === 'Pending' ? '#ea580c' : (item.bill_status === 'Completed' ? '#059669' : '#475569')};">
+                        ${item.bill_status || '—'}
+                    </td>
+                    <td style="text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;">
+                        ${formatMoney(item.total_amount)}
+                    </td>
+                    <td style="text-align: right; font-weight: 600; color: ${item.cash_amount > 0 ? '#10b981' : '#94a3b8'}; font-variant-numeric: tabular-nums;">
+                        ${item.cash_amount > 0 ? formatMoney(item.cash_amount) : '—'}
+                    </td>
+                    <td style="text-align: right; font-weight: 600; color: ${item.pending_amount > 0 ? '#ef4444' : '#94a3b8'}; font-variant-numeric: tabular-nums;">
+                        ${item.pending_amount > 0 ? formatMoney(item.pending_amount) : '—'}
+                    </td>
+                    <td style="text-align: center;">
+                        <button class="view-btn" style="${isCash ? 'background:#dcfce7; color:#15803d; border-color:#86efac;' : 'background:#ffe4e6; color:#be123c; border-color:#fda4af;'}" onclick="openVoucherModal(${item.vcode})">🔍 View</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('lblTotalVouchers').textContent = vouchers.length;
+        document.getElementById('lblTotalSalesAmt').textContent = '₹' + formatMoney(totalSalesAmt);
+        document.getElementById('lblTotalCashSales').textContent = '₹' + formatMoney(totalCashSales);
+        document.getElementById('lblTotalCreditSales').textContent = '₹' + formatMoney(totalCreditSales);
+    }
+
+    let currentVoucherData = null;
+
+    async function openVoucherModal(vcode) {
+        document.getElementById('voucherModalOverlay').style.display = 'block';
+        document.getElementById('voucherModal').style.display = 'flex';
+        
+        const tbody = document.getElementById('vchModalItemsBody');
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px;"><div class="loading-spinner"></div></td></tr>`;
+        
+        try {
+            const response = await fetch(`/api/sales_voucher/${vcode}`);
+            const data = await response.json();
+            
+            document.getElementById('vchModalNo').textContent = data.vno;
+            document.getElementById('vchModalSeries').textContent = data.series || 'Main';
+            document.getElementById('vchModalDate').textContent = data.date;
+            document.getElementById('vchModalSaleType').textContent = data.sale_type || 'L/GST-Exempt';
+            document.getElementById('vchModalParty').textContent = data.party_name;
+            
+            tbody.innerHTML = '';
+            if (!data.items || data.items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">No items found in this voucher.</td></tr>`;
+            } else {
+                data.items.forEach(it => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="text-align: center; font-weight: 600; color: #64748b;">${it.sr_no}</td>
+                        <td style="font-weight: 700; color: #1e293b;">${it.item_name}</td>
+                        <td style="text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; color: #047857;">${formatMoney(it.qty)}</td>
+                        <td style="text-align: center;"><span class="badge badge-sky" style="font-size: 11px;">${it.unit_en || it.unit}</span></td>
+                        <td style="text-align: right; font-variant-numeric: tabular-nums;">${formatMoney(it.price)}</td>
+                        <td style="text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; color: #047857;">${formatMoney(it.amount)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            
+            document.getElementById('vchModalTotalQty').textContent = formatMoney(data.total_qty);
+            document.getElementById('vchModalTotalAmt').textContent = '₹' + formatMoney(data.item_total || data.total_amount);
+
+            // Render Bill Sundries if present
+            const sundryContainer = document.getElementById('vchModalSundryContainer');
+            const sundryBody = document.getElementById('vchModalSundryBody');
+            sundryBody.innerHTML = '';
+            
+            if (data.bill_sundries && data.bill_sundries.length > 0) {
+                data.bill_sundries.forEach(s => {
+                    const tr = document.createElement('tr');
+                    const isNeg = s.amount < 0;
+                    tr.innerHTML = `
+                        <td style="text-align: center; font-weight: 600; color: #64748b;">${s.sr_no}</td>
+                        <td style="font-weight: 700; color: #9a3412;">${s.name}</td>
+                        <td style="text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; color: ${isNeg ? '#c2410c' : '#047857'};">
+                            ${formatMoney(s.amount)}
+                        </td>
+                    `;
+                    sundryBody.appendChild(tr);
+                });
+                sundryContainer.style.display = 'block';
+            } else {
+                sundryContainer.style.display = 'none';
+            }
+
+            document.getElementById('vchModalGrandTotal').textContent = '₹' + formatMoney(data.total_amount);
+            
+            // Store for PDF generation
+            currentVoucherData = data;
+            document.getElementById('vchWhatsappPhone').value = data.mobile || '';
+            
+        } catch (error) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--accent-rose); padding: 20px;">Failed to load voucher details.</td></tr>`;
+        }
+    }
+
+
+
+    // ── NEW: Send Invoice as R2 HTML Link (replaces old PDF system) ────────
+    function sendVchInvoiceLink() {
+        if (!currentVoucherData) return;
+        const phone = document.getElementById('vchWhatsappPhone').value.trim();
+        const btn = document.getElementById('vchSendPdfWhatsappBtn');
+
+        if (!phone) {
+            showToast('Please enter a valid mobile number', 'error');
+            return;
+        }
+
+        btn.disabled = true;
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = `<span class="loader-spinner" style="width:14px;height:14px;border-width:2px;border-top-color:white;display:inline-block;margin-right:4px;"></span> Uploading...`;
+
+        fetch('/api/invoice/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                vcode: currentVoucherData.vcode,
+                phone: phone
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast('✅ Invoice link sent via WhatsApp! Customer can open it on mobile.', 'success');
+            } else {
+                showToast('Failed to send invoice link: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(() => showToast('Network error: Failed to send invoice link', 'error'))
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        });
+    }
+
+    function downloadInvoicePDF(btnArg) {
+        if (!currentVoucherData) return;
+        
+        const data = currentVoucherData;
+        document.getElementById('invVchNo').textContent = data.vno;
+        document.getElementById('invDate').textContent = data.date;
+        
+        const topBalance = document.getElementById('invTopBalance');
+        topBalance.innerHTML = `₹${formatMoney(data.total_amount)} <span style="font-size:16px;">बैलेंस</span>`;
+        
+        const ribbon = document.getElementById('invRibbon');
+        const isCash = data.party_name && data.party_name.toUpperCase().includes('CASH');
+        
+        if (isCash) {
+            ribbon.textContent = 'CASH';
+            ribbon.style.background = '#10b981'; // Green for cash
+            ribbon.style.display = 'block';
+        } else {
+            ribbon.textContent = 'Outstanding';
+            ribbon.style.background = '#60a5fa'; // Blue for outstanding
+            ribbon.style.display = 'block';
+        }
+
+        let partyNameText = data.party_name_hi || data.party_name;
+        if (data.mobile) {
+            partyNameText += ` --- ${data.mobile}`;
+        }
+        document.getElementById('invPartyNameBlock').innerHTML = partyNameText;
+        
+        let addressBlock = '';
+        if (data.address) {
+            addressBlock += data.address.replace(/\n/g, '<br>');
+        }
+        document.getElementById('invPartyAddressBlock').innerHTML = addressBlock;
+        
+        const tbody = document.getElementById('invItemsBody');
+        tbody.innerHTML = '';
+        
+        if (data.items) {
+            const count = data.items.length;
+            const padY = count > 14 ? (count > 22 ? '2px' : '3px') : '4.5px';
+            const fSize = count > 14 ? (count > 22 ? '10.5px' : '11.5px') : '12px';
+
+            data.items.forEach((it, i) => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #000';
+                
+                const itemName = it.item_name_hi || it.item_name;
+                const unitStr = it.unit || it.unit_hi || it.unit_en || '';
+                
+                tr.innerHTML = `
+                    <td style="padding: ${padY} 5px; border-right: 1px solid #000; text-align: center; font-size: ${fSize};">${i+1}</td>
+                    <td style="padding: ${padY} 5px; border-right: 1px solid #000; font-size: ${fSize}; font-weight: 600;">${itemName}</td>
+                    <td style="padding: ${padY} 5px; border-right: 1px solid #000; text-align: center; font-size: ${fSize}; font-weight: 600;">${it.qty}</td>
+                    <td style="padding: ${padY} 5px; border-right: 1px solid #000; text-align: center; font-size: ${fSize}; font-weight: 500;">${unitStr}</td>
+                    <td style="padding: ${padY} 5px; border-right: 1px solid #000; text-align: right; font-size: ${fSize};">${formatMoney(it.price)}</td>
+                    <td style="padding: ${padY} 5px; text-align: right; font-size: ${fSize}; font-weight: 600;">${formatMoney(it.amount)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        const sundriesCont = document.getElementById('invSundriesContainer');
+        sundriesCont.innerHTML = '';
+        
+        if (data.bill_sundries) {
+            data.bill_sundries.forEach(s => {
+                sundriesCont.innerHTML += `
+                    <div style="display: flex; justify-content: space-between; padding: 2px 0;">
+                        <span>${s.name}:</span>
+                        <span>${formatMoney(s.amount)}</span>
+                    </div>
+                `;
+            });
+        }
+        
+        document.getElementById('invGrandTotal').textContent = '₹' + formatMoney(data.total_amount);
+        document.getElementById('invParchaBaki').textContent = '₹' + formatMoney(data.total_amount);
+        
+        // Generate PDF
+        const element = document.getElementById('invoicePrintTemplate');
+        
+        // Safely capture button state
+        const btn = btnArg || (typeof event !== 'undefined' ? (event.currentTarget || event.target) : null);
+        const originalText = btn ? btn.innerHTML : 'Download Invoice';
+        if (btn) {
+            btn.innerHTML = `<div class="loading-spinner" style="width: 14px; height: 14px; border-width: 2px;"></div> Generating PDF...`;
+            btn.disabled = true;
+        }
+        
+        const opt = {
+            margin:       [10, 0, 10, 0],
+            filename:     `${data.vno}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, windowWidth: 800, x: 0, y: 0, scrollX: 0, scrollY: 0 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak:    { mode: ['css', 'legacy'], avoid: 'tr' }
+        };
+        
+        // Show wrapper for canvas generation
+        const wrapper = document.getElementById('pdfWrapper');
+        wrapper.style.display = 'block';
+        wrapper.style.position = 'fixed';
+        wrapper.style.left = '0';
+        wrapper.style.top = '0';
+        wrapper.style.zIndex = '-1000';
+        wrapper.style.opacity = '0';
+        
+        if (typeof html2pdf !== 'function') {
+            alert('PDF Generator library is loading, please try again in a moment.');
+            wrapper.style.display = 'none';
+            if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
+            return;
+        }
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            wrapper.style.display = 'none';
+            if (btn) {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }).catch((err) => {
+            console.error(err);
+            wrapper.style.display = 'none';
+            if (btn) {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    }
+
+    function closeVoucherModal() {
+        document.getElementById('voucherModalOverlay').style.display = 'none';
+        document.getElementById('voucherModal').style.display = 'none';
+    }
+
+    document.getElementById('voucherModalOverlay').addEventListener('click', closeVoucherModal);
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase().trim();
+        if (!term) {
+            renderTable(allSalesVouchers);
+            return;
+        }
+        
+        const filtered = allSalesVouchers.filter(v => 
+            v.party_name.toLowerCase().includes(term) || 
+            v.vno.toLowerCase().includes(term)
+        );
+        renderTable(filtered);
+    });
+
+    // Default date to today on load
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchCompanyInfo();
+        const dateInput = document.getElementById('salesDate');
+        const urlParams = new URLSearchParams(window.location.search);
+        let defaultDate = urlParams.get('date');
+        const openVcode = urlParams.get('open');
+        
+        if (defaultDate) {
+            // Reformat to YYYY-MM-DD if it's DD-MM-YYYY
+            if (defaultDate.includes('-') && defaultDate.split('-')[0].length === 2) {
+                let parts = defaultDate.split('-');
+                defaultDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            dateInput.value = defaultDate;
+        } else {
+            const today = new Date();
+            const offset = today.getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(today - offset)).toISOString().split('T')[0];
+            dateInput.value = localISOTime;
+        }
+        
+        // Also ensure "Today" preset is active if date is today
+        document.getElementById('btnToday').classList.add('active');
+        document.getElementById('btnYesterday').classList.remove('active');
+        
+        loadSalesVouchers();
+        
+        if (openVcode) {
+            setTimeout(() => {
+                openVoucherModal(openVcode);
+            }, 600); // Give it a moment to render list
+        }
+    });
+</script>
+{% endblock %}
+

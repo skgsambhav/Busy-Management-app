@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}WhatsApp API Config{% endblock %}
+{% block page_title %}WhatsApp API Integration Settings{% endblock %}
+{% block page_subtitle %}Configure credentials and client device details for automated WhatsApp invoice and ledger updates{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <!-- Settings Form -->
+    <div class="card" style="margin-bottom: 24px; padding: 30px;">
+        <h3 style="margin-top: 0; margin-bottom: 20px; font-size: 18px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-indigo);"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            API Credentials
+        </h3>
+        
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-weight: 600; font-size: 13px; color: var(--text-secondary);">API URL / Endpoint</label>
+                <input type="text" id="apiUrl" class="form-control" style="width: 100%;" placeholder="https://waapi.dumx.tech/api/message/send-text">
+                <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Unofficial WAAPI endpoint URL</span>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-weight: 600; font-size: 13px; color: var(--text-secondary);">WhatsApp API Key (x-api-key)</label>
+                <input type="password" id="apiKey" class="form-control" style="width: 100%; font-family: monospace;" placeholder="wa_...">
+                <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Required API Key header (x-api-key)</span>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-weight: 600; font-size: 13px; color: var(--text-secondary);">Client Device ID (clientId)</label>
+                <input type="text" id="clientId" class="form-control" style="width: 100%;" placeholder="e.g. 18557836-6cd7-476a-870f-9a2d17bc6503_gm_device">
+                <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">The registered clientId string for your Whatsapp instance</span>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                <button id="saveConfigBtn" class="btn btn-primary" onclick="saveConfig()" style="min-width: 140px; height: 40px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                    Save Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Test Panel -->
+    <div class="card" style="padding: 30px;">
+        <h3 style="margin-top: 0; margin-bottom: 20px; font-size: 18px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-emerald);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            Test WhatsApp Connection
+        </h3>
+        
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <div class="form-group" style="margin: 0; flex: 1; min-width: 250px;">
+                    <label class="form-label" style="font-weight: 600; font-size: 13px; color: var(--text-secondary);">Test Recipient Number (10 digits or 91...)</label>
+                    <input type="text" id="testPhone" class="form-control" style="width: 100%;" placeholder="e.g. 9876543210">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-weight: 600; font-size: 13px; color: var(--text-secondary);">Test Message Text</label>
+                <textarea id="testMsg" class="form-control" style="width: 100%; height: 80px; resize: vertical;" placeholder="Type test message...">Hello from Busy Win App! WhatsApp API Connection is successful. 🚀</textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                <button id="testBtn" class="btn btn-secondary" onclick="sendTestMessage()" style="min-width: 160px; height: 40px; border-color: var(--accent-emerald); color: var(--accent-emerald); display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; background: transparent;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    Send Test Message
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        loadConfig();
+    });
+
+    function loadConfig() {
+        fetch("/api/settings/whatsapp")
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById("apiUrl").value = data.api_url || "https://waapi.dumx.tech/api/message/send-text";
+                document.getElementById("apiKey").value = data.api_key || "";
+                document.getElementById("clientId").value = data.client_id || "";
+            })
+            .catch(err => {
+                showToast("Failed to load WhatsApp configuration", "error");
+            });
+    }
+
+    function saveConfig() {
+        const btn = document.getElementById("saveConfigBtn");
+        const config = {
+            api_url: document.getElementById("apiUrl").value.trim(),
+            api_key: document.getElementById("apiKey").value.trim(),
+            client_id: document.getElementById("clientId").value.trim()
+        };
+
+        if (!config.api_key || !config.client_id) {
+            showToast("API Key and Client ID cannot be empty", "error");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Saving...`;
+
+        fetch("/api/settings/whatsapp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(config)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast("Configuration saved successfully", "success");
+            } else {
+                showToast("Failed to save configuration: " + (data.error || ""), "error");
+            }
+        })
+        .catch(err => {
+            showToast("Network error: Failed to save config", "error");
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save Configuration`;
+        });
+    }
+
+    function sendTestMessage() {
+        const btn = document.getElementById("testBtn");
+        const phone = document.getElementById("testPhone").value.trim();
+        const message = document.getElementById("testMsg").value.trim();
+
+        if (!phone) {
+            showToast("Please enter a test recipient number", "error");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Sending...`;
+
+        fetch("/api/settings/whatsapp/test", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone, message })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast("Test message sent successfully!", "success");
+            } else {
+                showToast("Test sending failed: " + (data.error || "Unknown error"), "error");
+            }
+        })
+        .catch(err => {
+            showToast("Network error: Failed to test connection", "error");
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send Test Message`;
+        });
+    }
+</script>
+{% endblock %}

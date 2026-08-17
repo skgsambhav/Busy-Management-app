@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+{% block title %}HDFC Transactions | GOPAL MARKETING{% endblock %}
+{% block content %}
+<div class="content-header" style="margin-bottom: 16px;">
+    <div>
+        <h1 class="page-title" style="display: flex; align-items: center; gap: 10px; font-size: 1.5rem;">
+            <span style="background: linear-gradient(135deg, #0284c7, #2563eb); color: white; border-radius: 10px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 10px rgba(37,99,235,0.25);">🏦</span>
+            HDFC UPI Transactions
+        </h1>
+        <p class="page-subtitle" style="margin-top: 2px;">Auto-synced alerts from Gmail for HDFC account.</p>
+    </div>
+    <div class="header-actions">
+        <button id="btnSync" class="btn btn-primary" style="background: linear-gradient(135deg, #2563eb, #4f46e5); border: none; padding: 8px 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">
+            <span class="icon">🔄</span> Sync Now
+        </button>
+    </div>
+</div>
+
+<div class="filter-row" style="display: flex; gap: 8px; margin-bottom: 16px; align-items: center; flex-wrap: wrap;">
+    <span style="font-size: 12px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px;">Filter:</span>
+    <button class="filter-btn active" data-days="1">1 Day</button>
+    <button class="filter-btn" data-days="3">3 Days</button>
+    <button class="filter-btn" data-days="7">7 Days</button>
+    <button class="filter-btn" data-days="all">All</button>
+</div>
+
+<div id="transactionsContainer">
+    <div style="text-align: center; padding: 40px; color: var(--text-light);">Loading transactions...</div>
+</div>
+
+<style>
+    .filter-btn {
+        background: var(--surface-card);
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .filter-btn:hover {
+        border-color: #6366f1;
+        color: #6366f1;
+    }
+    .filter-btn.active {
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    }
+    
+    .day-group {
+        background: var(--surface-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        margin-bottom: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    .day-header {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.06) 100%);
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .day-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 14px;
+        color: #4f46e5;
+    }
+    .day-badge {
+        background: rgba(99, 102, 241, 0.15);
+        color: #4f46e5;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 600;
+    }
+    .day-total {
+        color: #ffffff;
+        font-size: 0.9rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #10b981, #059669);
+        padding: 4px 12px;
+        border-radius: 20px;
+        box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+    }
+    
+    .txn-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .txn-table th {
+        text-align: left;
+        padding: 8px 16px;
+        color: var(--text-light);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        border-bottom: 1px solid var(--border-color);
+        background: rgba(0,0,0,0.015);
+    }
+    .txn-table td {
+        padding: 8px 16px;
+        border-bottom: 1px solid var(--border-light);
+        color: var(--text-main);
+        font-size: 13px;
+        vertical-align: middle;
+    }
+    .txn-table tr:hover td {
+        background: rgba(99, 102, 241, 0.03);
+    }
+    .txn-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .sender-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .sender-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+    .sender-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .sender-name {
+        font-weight: 600;
+        color: var(--text-main);
+        font-size: 13.5px;
+        line-height: 1.2;
+    }
+    .sender-vpa {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 2px;
+    }
+    .upi-ref {
+        font-family: 'Consolas', 'Courier New', monospace;
+        color: #475569;
+        background: rgba(100, 116, 139, 0.08);
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        border: 1px solid rgba(100, 116, 139, 0.15);
+        display: inline-block;
+    }
+    .amt-credit {
+        color: #10b981;
+        font-weight: 700;
+        font-size: 14.5px;
+        background: rgba(16, 185, 129, 0.1);
+        padding: 3px 10px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+</style>
+
+<script>
+let allTransactions = [];
+
+function doSync(silent = false) {
+    const btn = document.getElementById('btnSync');
+    if (btn) {
+        btn.innerHTML = `<span class="icon">⏳</span> Syncing...`;
+        btn.disabled = true;
+    }
+    
+    fetch('/api/hdfc_sync', {method: 'POST'})
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            if (!silent || d.synced > 0) {
+                showToast(d.message, "success");
+            }
+            if (d.synced > 0) {
+                loadTransactions();
+            }
+        } else if (!silent) {
+            showToast(d.error || "Sync failed", "error");
+        }
+    })
+    .catch(e => {
+        if (!silent) showToast("Network error", "error");
+    })
+    .finally(() => {
+        if (btn) {
+            btn.innerHTML = `<span class="icon">🔄</span> Sync Now`;
+            btn.disabled = false;
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadTransactions();
+    
+    // Auto-sync on page load (silent = true)
+    doSync(true);
+    
+    // Filter Buttons logic
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            renderTransactions(this.getAttribute('data-days'));
+        });
+    });
+    
+    document.getElementById('btnSync').addEventListener('click', function() {
+        doSync(false);
+    });
+});
+
+function loadTransactions() {
+    document.getElementById('transactionsContainer').innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-light);">Loading...</div>';
+    fetch('/api/hdfc_transactions')
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) {
+            document.getElementById('transactionsContainer').innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">Failed to load: ${data.error}</div>`;
+            return;
+        }
+        allTransactions = data.data; // Array of {date, display_date, total_amount, transactions}
+        const activeFilter = document.querySelector('.filter-btn.active').getAttribute('data-days');
+        renderTransactions(activeFilter);
+    });
+}
+
+function getInitial(name) {
+    if (!name) return 'U';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+}
+
+function renderTransactions(daysFilter) {
+    const container = document.getElementById('transactionsContainer');
+    if (!allTransactions || allTransactions.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="text-align: center; padding: 40px 20px; background: var(--surface-card); border-radius: 12px; border: 1px dashed var(--border-color);">
+                <div style="font-size: 36px; margin-bottom: 12px;">📭</div>
+                <h3 style="margin-bottom: 6px; font-size: 16px;">0 Transactions Found</h3>
+                <p style="color: var(--text-light); font-size: 13px;">Click 'Sync Now' to fetch recent transactions from Gmail.</p>
+            </div>`;
+        return;
+    }
+    
+    let sortedGroups = [...allTransactions];
+    
+    // Filter dates based on daysFilter
+    if (daysFilter !== 'all') {
+        const numDays = parseInt(daysFilter);
+        sortedGroups = sortedGroups.slice(0, numDays);
+    }
+    
+    if (sortedGroups.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-light); font-size: 14px;">No transactions found for the selected period.</div>';
+        return;
+    }
+
+    let html = '';
+    sortedGroups.forEach(group => {
+        const count = group.transactions.length;
+        html += `
+            <div class="day-group">
+                <div class="day-header">
+                    <div class="day-title-wrap">
+                        <span>📅</span>
+                        <span>${group.display_date}</span>
+                        <span class="day-badge">${count} Txn${count > 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="day-total">Total: ₹${parseFloat(group.total_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})} Cr</div>
+                </div>
+                <table class="txn-table">
+                    <thead>
+                        <tr>
+                            <th width="42%">SENDER DETAILS</th>
+                            <th width="38%">UPI REF NO</th>
+                            <th width="20%" style="text-align: right;">AMOUNT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        group.transactions.forEach(t => {
+            const initial = getInitial(t.sender_name);
+            html += `
+                <tr>
+                    <td>
+                        <div class="sender-cell">
+                            <div class="sender-avatar">${initial}</div>
+                            <div class="sender-info">
+                                <span class="sender-name">${t.sender_name || 'Unknown Sender'}</span>
+                                ${t.sender_vpa ? `<span class="sender-vpa">${t.sender_vpa}</span>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="upi-ref">${t.upi_ref_no || '-'}</span>
+                    </td>
+                    <td style="text-align: right;">
+                        <span class="amt-credit">+₹${parseFloat(t.amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+</script>
+{% endblock %}

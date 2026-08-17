@@ -1,0 +1,511 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Performance Analytics{% endblock %}
+{% block page_title %}Employee Analytics{% endblock %}
+{% block page_subtitle %}Tracking Billing and Packing Performance{% endblock %}
+
+{% block topbar_actions %}
+<div class="date-filter-bar" style="display: flex; gap: 10px; align-items: center; background: #ffffff; padding: 4px 10px; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+    <div class="preset-pills" style="display: flex; gap: 3px;">
+        <button type="button" class="preset-btn" data-days="1" style="padding: 3px 8px; font-size: 11px; border-radius: 5px; border: none; background: transparent; color: var(--text-light); font-weight: 600; cursor: pointer; transition: all 0.2s;">1D</button>
+        <button type="button" class="preset-btn" data-days="7" style="padding: 3px 8px; font-size: 11px; border-radius: 5px; border: none; background: transparent; color: var(--text-light); font-weight: 600; cursor: pointer; transition: all 0.2s;">7D</button>
+        <button type="button" class="preset-btn" data-days="15" style="padding: 3px 8px; font-size: 11px; border-radius: 5px; border: none; background: transparent; color: var(--text-light); font-weight: 600; cursor: pointer; transition: all 0.2s;">15D</button>
+        <button type="button" class="preset-btn active" data-days="30" style="padding: 3px 8px; font-size: 11px; border-radius: 5px; border: none; background: var(--primary-color, #4f46e5); color: #ffffff; font-weight: 600; cursor: pointer; transition: all 0.2s;">30D</button>
+    </div>
+    
+    <div style="width: 1px; height: 18px; background: #e2e8f0;"></div>
+
+    <div style="display: flex; align-items: center; gap: 6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        <input type="date" id="fromDate" class="form-control" style="padding: 2px 4px; border: none; outline: none; font-size: 12px; font-weight: 500; color: #334155; background: transparent; cursor: pointer;">
+    </div>
+    <span style="color: #94a3b8; font-size: 11px;">to</span>
+    <div style="display: flex; align-items: center; gap: 6px;">
+        <input type="date" id="toDate" class="form-control" style="padding: 2px 4px; border: none; outline: none; font-size: 12px; font-weight: 500; color: #334155; background: transparent; cursor: pointer;">
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+.compact-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+@media (max-width: 1024px) {
+    .compact-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+    .compact-kpi-grid { grid-template-columns: 1fr; }
+}
+.kpi-compact-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.kpi-compact-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.kpi-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+}
+.kpi-val {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-top: 2px;
+}
+.kpi-sub {
+    font-size: 10px;
+    font-weight: 600;
+    color: #475569;
+    margin-top: 2px;
+}
+.chart-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    margin-bottom: 20px;
+}
+.user-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.user-stat-row:hover {
+    background: #f8fafc;
+}
+.user-stat-row:last-child {
+    border-bottom: none;
+}
+</style>
+
+<div class="compact-kpi-grid">
+    
+    <!-- Top Salesman Card -->
+    <div class="kpi-compact-card" style="border-left: 5px solid #3b82f6;">
+        <div>
+            <div class="kpi-label">Top Salesman</div>
+            <div id="top-salesman-name" class="kpi-val" style="color: #2563eb; font-size: 18px;">-</div>
+            <div id="top-salesman-sub" class="kpi-sub">0 Sales</div>
+        </div>
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        </div>
+    </div>
+
+    <!-- Top Biller Card -->
+    <div class="kpi-compact-card" style="border-left: 5px solid #10b981;">
+        <div>
+            <div class="kpi-label">Top Biller</div>
+            <div id="top-biller-name" class="kpi-val" style="color: #059669; font-size: 18px;">-</div>
+            <div id="top-biller-sub" class="kpi-sub">0 Bills</div>
+        </div>
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(16, 185, 129, 0.1); color: #10b981; display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        </div>
+    </div>
+
+    <!-- Top Packer Card -->
+    <div class="kpi-compact-card" style="border-left: 5px solid #f59e0b;">
+        <div>
+            <div class="kpi-label">Top Packer</div>
+            <div id="top-packer-name" class="kpi-val" style="color: #d97706; font-size: 18px;">-</div>
+            <div id="top-packer-sub" class="kpi-sub">0 Packed</div>
+        </div>
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(245, 158, 11, 0.1); color: #f59e0b; display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+        </div>
+    </div>
+
+    
+    <!-- Total Sold Card -->
+    <div class="kpi-compact-card" style="border-left: 5px solid #0ea5e9;">
+        <div>
+            <div class="kpi-label">Total Bills Sold</div>
+            <div id="total-sold" class="kpi-val" style="color: #0284c7;">0</div>
+            <div id="total-sold-amt" class="kpi-sub">Total Value: ₹0.00</div>
+        </div>
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(14, 165, 233, 0.1); color: #0ea5e9; display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        </div>
+    </div>
+
+    <!-- Total Billed Card -->
+    <div class="kpi-compact-card" style="border-left: 5px solid #6366f1;">
+        <div>
+            <div class="kpi-label">Total Bills Billed</div>
+            <div id="total-billed" class="kpi-val" style="color: #4f46e5;">0</div>
+            <div id="total-billed-amt" class="kpi-sub">Total Value: ₹0.00</div>
+        </div>
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(99, 102, 241, 0.1); color: #6366f1; display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        </div>
+    </div>
+
+    <!-- Total Packed Card -->
+    <div class="kpi-compact-card" style="border-left: 5px solid #8b5cf6;">
+        <div>
+            <div class="kpi-label">Total Bills Packed</div>
+            <div id="total-packed" class="kpi-val" style="color: #7c3aed;">0</div>
+            <div class="kpi-sub">Ready for Dispatch</div>
+        </div>
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
+    <!-- Main User Comparison Chart -->
+    <div class="chart-card" style="margin-bottom: 0;">
+        <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #6366f1; display: inline-block;"></span>
+            Employee Comparison (Sales vs Billed vs Packed)
+        </h3>
+        <div style="position: relative; height: 320px; width: 100%;">
+            <canvas id="empCompareChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- User Stats List -->
+    <div class="chart-card" style="margin-bottom: 0; overflow-y: auto; max-height: 400px;">
+        <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: #0f172a;">Leaderboard</h3>
+        <div id="emp-stats-list">
+            <div style="text-align: center; color: #64748b; padding: 20px;">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Trend Chart -->
+<div class="chart-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                Daily Billing Trend
+            </h3>
+            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Tracking daily sales count of each employee</div>
+        </div>
+    </div>
+    <div style="position: relative; height: 350px; width: 100%;">
+        <canvas id="dailyTrendChart"></canvas>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let rawDataCache = null;
+let empCompareChart, dailyTrendChart;
+
+const COLORS = [
+    '#6366f1', '#10b981', '#f59e0b', '#06b6d4', 
+    '#ec4899', '#8b5cf6', '#14b8a6', '#f43f5e'
+];
+
+document.addEventListener("DOMContentLoaded", function() {
+    const formatDateInput = (d) => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    document.getElementById("fromDate").value = formatDateInput(thirtyDaysAgo);
+    document.getElementById("toDate").value = formatDateInput(today);
+
+    // Preset Buttons
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.preset-btn').forEach(b => {
+                b.classList.remove('active');
+                b.style.background = 'transparent';
+                b.style.color = 'var(--text-light)';
+            });
+            this.classList.add('active');
+            this.style.background = 'var(--primary-color, #4f46e5)';
+            this.style.color = '#ffffff';
+
+            const days = parseInt(this.getAttribute('data-days'));
+            const end = new Date();
+            const start = new Date(end);
+            if (days > 1) {
+                start.setDate(end.getDate() - days);
+            }
+
+            document.getElementById("fromDate").value = formatDateInput(start);
+            document.getElementById("toDate").value = formatDateInput(end);
+            loadData();
+        });
+    });
+
+    const createChartOptions = () => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 500, easing: 'easeOutQuart' },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+            legend: { 
+                position: 'top',
+                labels: { font: { family: 'Inter', size: 12 } }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                titleFont: { size: 12, weight: '600', family: 'Inter' },
+                bodyFont: { size: 13, weight: '700', family: 'Inter' },
+                padding: 10,
+                cornerRadius: 8
+            }
+        },
+        scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 11, family: 'Inter' }, color: '#64748b' } },
+            y: {
+                beginAtZero: true,
+                border: { display: false },
+                grid: { color: 'rgba(226, 232, 240, 0.6)' },
+                ticks: {
+                    font: { size: 11, family: 'Inter' },
+                    color: '#64748b'
+                }
+            }
+        }
+    });
+
+    // 1. Employee Comparison Chart
+    const ctxCompare = document.getElementById('empCompareChart').getContext('2d');
+    empCompareChart = new Chart(ctxCompare, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Sales',
+                    data: [],
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Billed',
+                    data: [],
+                    backgroundColor: '#10b981',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Packed',
+                    data: [],
+                    backgroundColor: '#f59e0b',
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: createChartOptions()
+    });
+
+    // 2. Daily Trend Chart
+    const ctxTrend = document.getElementById('dailyTrendChart').getContext('2d');
+    dailyTrendChart = new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: []
+        },
+        options: createChartOptions()
+    });
+    // Add specific settings to Trend Chart
+    dailyTrendChart.options.plugins.tooltip.callbacks = {
+        label: function(context) {
+            return context.dataset.label + ': ' + context.parsed.y + ' Bills';
+        }
+    };
+
+    function loadData() {
+        const fromDate = document.getElementById("fromDate").value;
+        const toDate = document.getElementById("toDate").value;
+        
+        let url = '/api/employee_analytics?';
+        if (fromDate) url += `from_date=${fromDate}&`;
+        if (toDate) url += `to_date=${toDate}`;
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    if (window.showToast) showToast(data.error, "error");
+                    return;
+                }
+                rawDataCache = data;
+                renderCharts(data);
+            })
+            .catch(err => {
+                console.error(err);
+                if (window.showToast) showToast("Failed to load employee analytics", "error");
+            });
+    }
+
+    function renderCharts(data) {
+        const formatMoney = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(val);
+
+        let totalSalesCount = 0;
+        let totalSalesAmt = 0;
+        let totalBilledCount = 0;
+        let totalBilledAmt = 0;
+        let totalPackedCount = 0;
+        
+        let topSalesman = { name: "-", count: 0 };
+        let topBiller = { name: "-", count: 0 };
+        let topPacker = { name: "-", count: 0 };
+        
+        let empLabels = [];
+        let empSalesData = [];
+        let empBilledData = [];
+        let empPackedData = [];
+
+        // Parse Employees
+        const emps = Object.keys(data.employees || {}).sort((a, b) => {
+            const sumA = (data.employees[a].sales_count || 0) + (data.employees[a].billed_count || 0) + (data.employees[a].packed_count || 0);
+            const sumB = (data.employees[b].sales_count || 0) + (data.employees[b].billed_count || 0) + (data.employees[b].packed_count || 0);
+            return sumB - sumA;
+        });
+        
+        let leaderboardHTML = '';
+        
+        emps.forEach((empName, index) => {
+            const eData = data.employees[empName];
+            
+            totalSalesCount += (eData.sales_count || 0);
+            totalSalesAmt += (eData.sales_amount || 0);
+            totalBilledCount += (eData.billed_count || 0);
+            totalBilledAmt += (eData.billed_amount || 0);
+            totalPackedCount += (eData.packed_count || 0);
+            
+            if ((eData.sales_count||0) > topSalesman.count) {
+                topSalesman = { name: empName, count: eData.sales_count };
+            }
+            if ((eData.billed_count||0) > topBiller.count) {
+                topBiller = { name: empName, count: eData.billed_count };
+            }
+            if (eData.packed_count > topPacker.count) {
+                topPacker = { name: empName, count: eData.packed_count };
+            }
+            
+            empLabels.push(empName);
+            empSalesData.push(eData.sales_count || 0);
+            empBilledData.push(eData.billed_count || 0);
+            empPackedData.push(eData.packed_count || 0);
+            
+            leaderboardHTML += `
+                <div class="user-stat-row">
+                    <div>
+                        <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${empName}</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">${formatMoney(eData.billed_amount)} Value</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 800; color: #3b82f6; font-size: 15px;">
+                            ${eData.sales_count || 0} Sales
+                        </div>
+                        <div style="font-size: 12px; color: #10b981; margin-top: 2px; font-weight: 600;">${eData.billed_count || 0} Billed | ${eData.packed_count || 0} Packed</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        if (emps.length === 0) leaderboardHTML = '<div style="text-align: center; color: #64748b; padding: 20px;">No employee activity found</div>';
+        
+        document.getElementById("emp-stats-list").innerHTML = leaderboardHTML;
+
+        // Update KPIs
+        document.getElementById("top-salesman-name").textContent = topSalesman.name;
+        document.getElementById("top-salesman-sub").textContent = `${topSalesman.count} Sales`;
+        document.getElementById("total-sold").textContent = totalSalesCount;
+        document.getElementById("total-sold-amt").textContent = `Total Value: ${formatMoney(totalSalesAmt)}`;
+        document.getElementById("top-biller-name").textContent = topBiller.name;
+        document.getElementById("top-biller-sub").textContent = `${topBiller.count} Bills`;
+        document.getElementById("top-packer-name").textContent = topPacker.name;
+        document.getElementById("top-packer-sub").textContent = `${topPacker.count} Packed`;
+        document.getElementById("total-billed").textContent = totalBilledCount;
+        document.getElementById("total-billed-amt").textContent = `Total Value: ${formatMoney(totalBilledAmt)}`;
+        document.getElementById("total-packed").textContent = totalPackedCount;
+
+        // Update Compare Chart
+        empCompareChart.data.labels = empLabels;
+        empCompareChart.data.datasets[0].data = empSalesData;
+        empCompareChart.data.datasets[1].data = empBilledData;
+        empCompareChart.data.datasets[2].data = empPackedData;
+        empCompareChart.update();
+
+        // Update Trend Chart (Timeline - only for billed_count for simplicity)
+        const trendLabels = [];
+        const datasetsMap = {};
+        
+        // Initialize datasets
+        emps.forEach((empName, i) => {
+            datasetsMap[empName] = {
+                label: empName,
+                data: [],
+                borderColor: COLORS[i % COLORS.length],
+                backgroundColor: COLORS[i % COLORS.length],
+                borderWidth: 2,
+                pointRadius: 2,
+                pointHoverRadius: 5,
+                tension: 0.3,
+                fill: false
+            };
+        });
+
+        (data.timeline || []).forEach(day => {
+            trendLabels.push(day.display_date.substring(0, 5));
+            emps.forEach(empName => {
+                const count = (day.employees[empName]) ? day.employees[empName].sales_count : 0;
+                datasetsMap[empName].data.push(count);
+            });
+        });
+
+        dailyTrendChart.data.labels = trendLabels;
+        dailyTrendChart.data.datasets = Object.values(datasetsMap);
+        dailyTrendChart.update();
+    }
+
+    document.getElementById("fromDate").addEventListener("change", function() {
+        document.querySelectorAll('.preset-btn').forEach(b => {
+            b.classList.remove('active');
+            b.style.background = 'transparent';
+            b.style.color = 'var(--text-light)';
+        });
+        loadData();
+    });
+
+    document.getElementById("toDate").addEventListener("change", function() {
+        document.querySelectorAll('.preset-btn').forEach(b => {
+            b.classList.remove('active');
+            b.style.background = 'transparent';
+            b.style.color = 'var(--text-light)';
+        });
+        loadData();
+    });
+
+    loadData();
+});
+</script>
+{% endblock %}
+

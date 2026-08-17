@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard Overview{% endblock %}
+{% block page_subtitle %}Real-time summary of receipts & inventory activity{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+
+    <!-- Stats Cards Grid -->
+    <div class="stats-grid">
+        <div class="stat-card-light card-indigo">
+            <div class="stat-icon-wrapper icon-indigo">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+            </div>
+            <div class="stat-details">
+                <span class="stat-number">₹{{ '{:,.0f}'.format(today_stats.sales or 0) }}</span>
+                <span class="stat-label-text">Today's Sales</span>
+            </div>
+        </div>
+
+        <div class="stat-card-light card-purple">
+            <div class="stat-icon-wrapper icon-purple">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+            </div>
+            <div class="stat-details">
+                <span class="stat-number">₹{{ '{:,.0f}'.format(today_stats.receipts or 0) }}</span>
+                <span class="stat-label-text">Today's Receipt Amt</span>
+            </div>
+        </div>
+
+        <div class="stat-card-light card-emerald">
+            <div class="stat-icon-wrapper icon-emerald">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+            </div>
+            <div class="stat-details">
+                <span class="stat-number">₹{{ '{:,.0f}'.format(today_stats.credit_sales or 0) }}</span>
+                <span class="stat-label-text">Today's Credit Sale</span>
+            </div>
+        </div>
+
+        <div class="stat-card-light card-amber">
+            <div class="stat-icon-wrapper icon-amber">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            </div>
+            <div class="stat-details">
+                <span class="stat-number">₹{{ '{:,.0f}'.format(today_stats.inflow or 0) }}</span>
+                <span class="stat-label-text">Today's Inflow</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="card" style="margin-top: 20px;">
+        <div class="card-header">
+            <h2 class="card-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2"><path d="M3 3v18h18" /><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" /></svg>
+                30-Day Performance Timeline
+            </h2>
+        </div>
+        <div class="card-body" style="padding: 20px; height: 350px;">
+            <canvas id="performanceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Quick Action Bar -->
+    <div class="quick-actions-card">
+        <div class="quick-title">Quick Actions</div>
+        <div class="quick-buttons">
+            <a href="{{ url_for('receipts.receipt_new') }}" class="btn btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
+                Create New Receipt
+            </a>
+            <a href="{{ url_for('items.items_list') }}" class="btn btn-secondary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /></svg>
+                Manage Item Master
+            </a>
+            <a href="{{ url_for('ledger.ledger_view') }}" class="btn btn-secondary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /></svg>
+                View Account Ledger
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Receipts Table Card -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                Recent Receipts Activity
+            </h2>
+            <a href="{{ url_for('receipts.receipt_list') }}" class="btn btn-ghost">View All Receipts →</a>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Voucher No</th>
+                        <th>Date</th>
+                        <th>Party Account</th>
+                        <th class="text-right">Amount (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if receipts %}
+                        {% for r in receipts %}
+                        <tr>
+                            <td><span class="badge badge-sky" style="font-family: monospace; font-size: 13px;">{{ r.vch_no }}</span></td>
+                            <td style="color: var(--text-muted); font-weight: 500;">{{ r.date }}</td>
+                            <td style="font-weight: 600; color: var(--text-primary);">{{ r.party or '—' }}</td>
+                            <td class="text-right" style="font-weight: 700; color: var(--accent-emerald);">₹{{ '{:,.2f}'.format(r.amount or 0) }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">No recent receipts found</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<style>
+.dashboard-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+.stat-card-light {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow-card);
+    transition: var(--transition);
+}
+.stat-card-light:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+.stat-icon-wrapper {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.icon-indigo { background: var(--accent-indigo-light); color: var(--accent-indigo); }
+.icon-emerald { background: var(--accent-emerald-light); color: var(--accent-emerald); }
+.icon-purple { background: var(--accent-purple-light); color: var(--accent-purple); }
+.icon-amber { background: var(--accent-amber-light); color: var(--accent-amber); }
+
+.stat-details {
+    display: flex;
+    flex-direction: column;
+}
+.stat-number {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+.stat-label-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.quick-actions-card {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow-card);
+}
+.quick-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.quick-buttons {
+    display: flex;
+    gap: 12px;
+}
+</style>
+
+<script id="metrics-data" type="application/json">
+{{ metrics|tojson|safe if metrics else '{}' }}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let metrics = null;
+    try {
+        const metricsEl = document.getElementById('metrics-data');
+        if (metricsEl) {
+            metrics = JSON.parse(metricsEl.textContent);
+        }
+    } catch (e) {
+        console.error("Error parsing metrics JSON:", e);
+    }
+    
+    if (!metrics || !metrics.timeline) return;
+    
+    const timeline = metrics.timeline;
+    const labels = timeline.map(d => d.display_date ? d.display_date.substring(0, 5) : '');
+    const salesData = timeline.map(d => d.sales || 0);
+    const receiptsData = timeline.map(d => d.receipts || 0);
+    const inflowData = timeline.map(d => d.inflow || 0);
+    
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Sales (₹)',
+                    data: salesData,
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Total Inflow (₹)',
+                    data: inflowData,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Receipts (₹)',
+                    data: receiptsData,
+                    borderColor: '#8b5cf6',
+                    borderDash: [5, 5],
+                    backgroundColor: 'rgba(139, 92, 246, 0.08)',
+                    borderWidth: 2.5,
+                    pointRadius: 3,
+                    fill: false,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 6 } }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Entry{% endblock %}
+{% block page_title %}New Purchase Entry{% endblock %}
+{% block page_subtitle %}Create a Purchase Inventory Voucher in Busy{% endblock %}
+
+{% block content %}
+<div class="form-layout">
+
+  <!-- Entry Form -->
+  <div class="form-panel" style="flex: 1; max-width: 100%;">
+    <div class="card" style="overflow: visible;">
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          Purchase Voucher Details
+        </h2>
+        <span class="badge badge-emerald">Series: Main (GMPURC)</span>
+      </div>
+
+      <form id="purchaseForm" class="receipt-form" style="padding: 24px;" novalidate>
+
+        <!-- Header Info -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="date">Date <span class="required" style="color: var(--accent-rose);">*</span></label>
+            <input type="date" id="date" name="date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Voucher No.</label>
+            <div class="form-control readonly-field" style="background: #f8fafc; font-weight: 600; color: var(--accent-emerald);">Auto</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex: 2;">
+            <label class="form-label" for="supplierSearch">Supplier (Party) <span class="required" style="color: var(--accent-rose);">*</span></label>
+            <div class="search-input-wrapper">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="supplierSearch" class="form-control search-input" 
+                     placeholder="Type supplier name to search..." autocomplete="off">
+              <input type="hidden" id="supplierCode" name="supplier_code" required>
+              <div id="supplierDropdown" class="dropdown-list hidden"></div>
+            </div>
+          </div>
+          
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label" for="purcType">Purchase Type</label>
+            <select id="purcType" class="form-control">
+              <option value="L_GST">Local B2B</option>
+              <option value="I_GST">Inter-State B2B</option>
+              <option value="L_EXEMPT">Local Exempt</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Item Grid -->
+        <div class="bill-section" style="margin-top: 30px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;">
+          <div class="bill-header" style="background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="bill-title" style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+              Inventory Items
+            </h3>
+            <button type="button" class="btn btn-secondary btn-sm" id="addItemBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Add Row
+            </button>
+          </div>
+          
+          <div class="table-responsive">
+            <table class="data-table" id="itemsTable">
+              <thead>
+                <tr>
+                  <th width="40%">Item Name</th>
+                  <th width="15%">Qty</th>
+                  <th width="10%">Unit</th>
+                  <th width="15%">Price</th>
+                  <th width="15%">Amount</th>
+                  <th width="5%"></th>
+                </tr>
+              </thead>
+              <tbody id="itemsBody">
+                <!-- Rows will be added dynamically -->
+              </tbody>
+              <tfoot>
+                <tr style="background: #f8fafc; font-weight: 700;">
+                  <td colspan="4" style="text-align: right; padding-right: 15px;">Sub Total:</td>
+                  <td id="subTotal" style="color: var(--accent-indigo);">0.00</td>
+                  <td></td>
+                </tr>
+                <tr style="background: #f8fafc; font-weight: 700;">
+                  <td colspan="4" style="text-align: right; padding-right: 15px;">GST / Taxes:</td>
+                  <td id="taxTotal" style="color: var(--accent-rose);">0.00</td>
+                  <td></td>
+                </tr>
+                <tr style="background: #eef2ff; font-weight: 800; font-size: 15px;">
+                  <td colspan="4" style="text-align: right; padding-right: 15px;">Grand Total:</td>
+                  <td id="grandTotal" style="color: #4338ca;">0.00</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+        
+        <div class="form-group" style="margin-top: 20px;">
+          <label class="form-label" for="narration">Narration</label>
+          <input type="text" id="narration" name="narration" class="form-control" placeholder="Short description or bill no...">
+        </div>
+
+        <!-- Submit actions -->
+        <div class="form-actions" style="margin-top: 30px; display: flex; justify-content: flex-end; gap: 12px;">
+          <button type="button" class="btn btn-secondary" onclick="window.history.back()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            Save Purchase
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let suppliersData = [];
+  let itemsData = [];
+  
+  // Set today's date
+  document.getElementById('date').valueAsDate = new Date();
+  
+  // Load initial data
+  async function loadData() {
+    try {
+      const [suppRes, itemsRes] = await Promise.all([
+        fetch('/api/ng_purchase/suppliers'),
+        fetch('/api/ng_purchase/items')
+      ]);
+      
+      const suppJson = await suppRes.json();
+      const itemsJson = await itemsRes.json();
+      
+      if(suppJson.success) suppliersData = suppJson.suppliers;
+      if(itemsJson.success) itemsData = itemsJson.items;
+      
+      // Add first empty row
+      addNewItemRow();
+    } catch(err) {
+      console.error("Failed to load data", err);
+    }
+  }
+  
+  // Supplier Search Logic
+  const supplierSearch = document.getElementById('supplierSearch');
+  const supplierDropdown = document.getElementById('supplierDropdown');
+  const supplierCodeInput = document.getElementById('supplierCode');
+  
+  supplierSearch.addEventListener('input', function(e) {
+    const val = e.target.value.toLowerCase();
+    supplierDropdown.innerHTML = '';
+    
+    if (!val) {
+      supplierDropdown.classList.add('hidden');
+      supplierCodeInput.value = '';
+      return;
+    }
+    
+    const matches = suppliersData.filter(s => s.name.toLowerCase().includes(val)).slice(0, 10);
+    
+    if (matches.length > 0) {
+      matches.forEach(supplier => {
+        const div = document.createElement('div');
+        div.className = 'dropdown-item';
+        div.innerHTML = `
+          <div style="font-weight: 600;">${supplier.name}</div>
+          <div style="font-size: 11px; color: var(--text-muted);">${supplier.group}</div>
+        `;
+        div.addEventListener('click', () => {
+          supplierSearch.value = supplier.name;
+          supplierCodeInput.value = supplier.code;
+          supplierDropdown.classList.add('hidden');
+        });
+        supplierDropdown.appendChild(div);
+      });
+      supplierDropdown.classList.remove('hidden');
+    } else {
+      supplierDropdown.classList.add('hidden');
+    }
+  });
+  
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!supplierSearch.contains(e.target) && !supplierDropdown.contains(e.target)) {
+      supplierDropdown.classList.add('hidden');
+    }
+  });
+  
+  // Dynamic Item Grid Logic
+  const itemsBody = document.getElementById('itemsBody');
+  document.getElementById('addItemBtn').addEventListener('click', addNewItemRow);
+  
+  function addNewItemRow() {
+    const tr = document.createElement('tr');
+    tr.className = 'item-row';
+    
+    // Create random ID for inputs
+    const rowId = Math.random().toString(36).substr(2, 9);
+    
+    tr.innerHTML = `
+      <td style="position: relative;">
+        <input type="text" class="form-control item-search" placeholder="Search item..." autocomplete="off">
+        <input type="hidden" class="item-code">
+        <div class="dropdown-list hidden item-dropdown" style="top: 40px;"></div>
+      </td>
+      <td>
+        <input type="number" class="form-control item-qty" value="1" min="1" step="any">
+      </td>
+      <td>
+        <input type="text" class="form-control item-unit readonly-field" readonly style="background: #f8fafc;">
+      </td>
+      <td>
+        <input type="number" class="form-control item-price" value="0.00" min="0" step="any">
+      </td>
+      <td>
+        <input type="text" class="form-control item-amount readonly-field" readonly value="0.00" style="background: #f8fafc; font-weight: 600;">
+      </td>
+      <td>
+        <button type="button" class="btn btn-sm btn-remove-row" style="padding: 6px; color: var(--accent-rose); background: rgba(244, 63, 94, 0.1); border: none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </td>
+    `;
+    
+    itemsBody.appendChild(tr);
+    
+    // Attach event listeners for this row
+    const searchInput = tr.querySelector('.item-search');
+    const dropdown = tr.querySelector('.item-dropdown');
+    const codeInput = tr.querySelector('.item-code');
+    const unitInput = tr.querySelector('.item-unit');
+    const priceInput = tr.querySelector('.item-price');
+    const qtyInput = tr.querySelector('.item-qty');
+    const amountInput = tr.querySelector('.item-amount');
+    const removeBtn = tr.querySelector('.btn-remove-row');
+    
+    removeBtn.addEventListener('click', () => {
+      tr.remove();
+      calculateTotals();
+    });
+    
+    // Calculation logic
+    const calcAmt = () => {
+      const q = parseFloat(qtyInput.value) || 0;
+      const p = parseFloat(priceInput.value) || 0;
+      amountInput.value = (q * p).toFixed(2);
+      calculateTotals();
+    };
+    
+    qtyInput.addEventListener('input', calcAmt);
+    priceInput.addEventListener('input', calcAmt);
+    
+    // Item search logic
+    searchInput.addEventListener('input', function(e) {
+      const val = e.target.value.toLowerCase();
+      dropdown.innerHTML = '';
+      
+      if (!val) {
+        dropdown.classList.add('hidden');
+        return;
+      }
+      
+      const matches = itemsData.filter(i => i.name.toLowerCase().includes(val)).slice(0, 10);
+      
+      if (matches.length > 0) {
+        matches.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'dropdown-item';
+          div.innerHTML = `
+            <div style="font-weight: 600;">${item.name}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Stock: -- | Unit: ${item.unit} | Purc: ₹${item.purc_price}</div>
+          `;
+          div.addEventListener('click', () => {
+            searchInput.value = item.name;
+            codeInput.value = item.code;
+            unitInput.value = item.unit;
+            priceInput.value = item.purc_price || 0;
+            dropdown.classList.add('hidden');
+            calcAmt(); // trigger recalc
+          });
+          dropdown.appendChild(div);
+        });
+        dropdown.classList.remove('hidden');
+      } else {
+        dropdown.classList.add('hidden');
+      }
+    });
+    
+    // Close item dropdowns
+    document.addEventListener('click', function(e) {
+      if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+  }
+  
+  function calculateTotals() {
+    let sub = 0;
+    document.querySelectorAll('.item-amount').forEach(el => {
+      sub += parseFloat(el.value) || 0;
+    });
+    
+    document.getElementById('subTotal').innerText = sub.toFixed(2);
+    // Add mock tax logic if needed, for now just 0
+    let tax = 0;
+    document.getElementById('taxTotal').innerText = tax.toFixed(2);
+    document.getElementById('grandTotal').innerText = (sub + tax).toFixed(2);
+  }
+  
+  // Submit logic
+  document.getElementById('purchaseForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const saveBtn = document.getElementById('saveBtn');
+    
+    if(!document.getElementById('supplierCode').value) {
+      alert("Please select a valid supplier.");
+      return;
+    }
+    
+    // Gather item rows
+    const rows = [];
+    document.querySelectorAll('.item-row').forEach(tr => {
+      const code = tr.querySelector('.item-code').value;
+      const qty = parseFloat(tr.querySelector('.item-qty').value);
+      const price = parseFloat(tr.querySelector('.item-price').value);
+      const amount = parseFloat(tr.querySelector('.item-amount').value);
+      
+      if(code && qty > 0) {
+        rows.push({ code, qty, price, amount });
+      }
+    });
+    
+    if(rows.length === 0) {
+      alert("Please add at least one valid item row.");
+      return;
+    }
+    
+    const payload = {
+      date: document.getElementById('date').value,
+      supplier_code: document.getElementById('supplierCode').value,
+      purc_type: document.getElementById('purcType').value,
+      narration: document.getElementById('narration').value,
+      items: rows,
+      total_amount: document.getElementById('grandTotal').innerText
+    };
+    
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner"></span> Saving...';
+    
+    try {
+      const res = await fetch('/api/ng_purchase/submit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      
+      if(data.success) {
+        alert("Purchase Voucher Saved successfully! " + data.vch_no);
+        window.location.reload();
+      } else {
+        alert("Error: " + data.error);
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = 'Save Purchase';
+      }
+    } catch(err) {
+      alert("Network Error!");
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = 'Save Purchase';
+    }
+  });
+
+  // Init
+  loadData();
+</script>
+<style>
+  .search-input-wrapper {
+    position: relative;
+  }
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+  }
+  .search-input {
+    padding-left: 36px !important;
+  }
+  .dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    max-height: 250px;
+    overflow-y: auto;
+    margin-top: 4px;
+  }
+  .dropdown-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+  }
+  .dropdown-item:last-child {
+    border-bottom: none;
+  }
+  .dropdown-item:hover {
+    background: #f8fafc;
+  }
+  .hidden {
+    display: none;
+  }
+  .readonly-field {
+    border-color: transparent !important;
+    cursor: not-allowed;
+  }
+</style>
+{% endblock %}

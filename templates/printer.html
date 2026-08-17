@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Printer Settings{% endblock %}
+{% block page_title %}Printer Settings{% endblock %}
+{% block page_subtitle %}Manage remote printers and test printing jobs{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">
+        <h2>Installed Printers</h2>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="data-table" id="printersTable">
+                <thead>
+                    <tr>
+                        <th>Printer Name</th>
+                        <th>Share Name</th>
+                        <th>Port</th>
+                        <th>Status</th>
+                        <th>Shared</th>
+                    </tr>
+                </thead>
+                <tbody id="printersBody">
+                    <tr><td colspan="5" style="text-align:center;">Loading printers...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Test Print Job</h2>
+    </div>
+    <div class="card-body">
+        <form id="printForm" onsubmit="submitPrintJob(event)" style="display:flex; flex-direction:column; gap:15px; max-width: 500px;">
+            <div class="form-group">
+                <label>Select Printer</label>
+                <select id="printerSelect" name="printer" class="form-control" required>
+                    <option value="">-- Loading Printers --</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>File to Print (PDF, TXT, ZPL, Image)</label>
+                <input type="file" id="printFile" name="file" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label>Number of Copies</label>
+                <input type="number" id="printCopies" name="copies" class="form-control" value="1" min="1" required>
+            </div>
+
+            <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="rawPrint" name="raw" value="true">
+                <label for="rawPrint" style="margin:0;">Raw / ZPL Print</label>
+            </div>
+
+            <div class="form-group" id="shareNameGroup" style="display:none;">
+                <label>Printer Share Name (Required for Raw Print)</label>
+                <input type="text" id="shareName" name="shareName" class="form-control" placeholder="e.g. ZDesigner">
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="printBtn">Send Print Job</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('rawPrint').addEventListener('change', function() {
+        document.getElementById('shareNameGroup').style.display = this.checked ? 'block' : 'none';
+        
+        if (this.checked) {
+            // Auto-fill share name based on selected printer if possible
+            const select = document.getElementById('printerSelect');
+            const selectedOption = select.options[select.selectedIndex];
+            if (selectedOption && selectedOption.dataset.sharename) {
+                document.getElementById('shareName').value = selectedOption.dataset.sharename;
+            }
+        }
+    });
+
+    document.getElementById('printerSelect').addEventListener('change', function() {
+        if (document.getElementById('rawPrint').checked) {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.dataset.sharename) {
+                document.getElementById('shareName').value = selectedOption.dataset.sharename;
+            }
+        }
+    });
+
+    async function loadPrinters() {
+        try {
+            const res = await fetch('/api/printers');
+            const data = await res.json();
+            
+            let tbodyHtml = '';
+            let selectHtml = '<option value="">-- Select Printer --</option>';
+
+            if (data.error) {
+                tbodyHtml = `<tr><td colspan="5" style="color:red; text-align:center;">Error: ${data.error}</td></tr>`;
+            } else if (data.length === 0) {
+                tbodyHtml = '<tr><td colspan="5" style="text-align:center;">No printers found</td></tr>';
+            } else {
+                data.forEach(p => {
+                    const statusText = p.PrinterStatus === 0 ? '<span style="color:green">Ready</span>' : `<span style="color:orange">Status: ${p.PrinterStatus}</span>`;
+                    const sharedIcon = p.Shared ? '✅' : '❌';
+                    const shareName = p.ShareName || '';
+
+                    tbodyHtml += `
+                        <tr>
+                            <td><strong>${p.Name}</strong></td>
+                            <td>${shareName}</td>
+                            <td>${p.PortName}</td>
+                            <td>${statusText}</td>
+                            <td>${sharedIcon}</td>
+                        </tr>
+                    `;
+
+                    selectHtml += `<option value="${p.Name}" data-sharename="${shareName}">${p.Name}</option>`;
+                });
+            }
+
+            document.getElementById('printersBody').innerHTML = tbodyHtml;
+            document.getElementById('printerSelect').innerHTML = selectHtml;
+
+        } catch (e) {
+            document.getElementById('printersBody').innerHTML = `<tr><td colspan="5" style="color:red; text-align:center;">Error loading printers: ${e.message}</td></tr>`;
+        }
+    }
+
+    async function submitPrintJob(e) {
+        e.preventDefault();
+        
+        const fileInput = document.getElementById('printFile');
+        if (!fileInput.files.length) {
+            showToast('Please select a file to print', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('printer', document.getElementById('printerSelect').value);
+        formData.append('file', fileInput.files[0]);
+        formData.append('copies', document.getElementById('printCopies').value);
+        
+        if (document.getElementById('rawPrint').checked) {
+            formData.append('raw', 'true');
+            formData.append('shareName', document.getElementById('shareName').value);
+        }
+
+        const btn = document.getElementById('printBtn');
+        const oldText = btn.innerHTML;
+        btn.innerHTML = 'Sending...';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/print', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                showToast(data.message || 'Print job sent successfully', 'success');
+                fileInput.value = ''; // clear
+            } else {
+                showToast(data.error || 'Failed to send print job', 'error');
+            }
+        } catch (err) {
+            showToast('Network error: ' + err.message, 'error');
+        } finally {
+            btn.innerHTML = oldText;
+            btn.disabled = false;
+        }
+    }
+
+    // Call on load
+    document.addEventListener('DOMContentLoaded', loadPrinters);
+</script>
+{% endblock %}

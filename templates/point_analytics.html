@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}Point Ledger Analytics{% endblock %}
+{% block page_title %}Point Ledger Analytics{% endblock %}
+{% block page_subtitle %}Comprehensive performance metrics and analytics for loyalty program members{% endblock %}
+
+{% block content %}
+<style>
+    .analytics-kpi-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+    
+    .kpi-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .kpi-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .kpi-value {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--text-primary);
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+    
+    .kpi-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 5px;
+    }
+
+    .chart-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .chart-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border-color);
+        min-height: 350px;
+    }
+    
+    .chart-header {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .data-table th {
+        background-color: #f8fafc;
+        color: var(--text-secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        padding: 12px 16px;
+    }
+    
+    .data-table td {
+        padding: 12px 16px;
+        font-size: 14px;
+        vertical-align: middle;
+    }
+    
+    .badge-primary { background: #e0e7ff; color: #4338ca; }
+    .badge-success { background: #dcfce7; color: #15803d; }
+    .badge-danger { background: #fee2e2; color: #b91c1c; }
+    .badge-warning { background: #fef3c7; color: #b45309; }
+    
+    @media (max-width: 1024px) {
+        .chart-container { grid-template-columns: 1fr; }
+    }
+</style>
+
+<!-- KPI Cards -->
+<div class="analytics-kpi-container">
+    <div class="kpi-card" style="border-left: 4px solid #3b82f6;">
+        <div class="kpi-icon" style="background: #eff6ff; color: #3b82f6;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        </div>
+        <div class="kpi-title">Total Loyalty Members</div>
+        <div class="kpi-value" id="kpiMembers">0</div>
+    </div>
+    
+    <div class="kpi-card" style="border-left: 4px solid #10b981;">
+        <div class="kpi-icon" style="background: #ecfdf5; color: #10b981;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        </div>
+        <div class="kpi-title">Total Sales (Loyalty)</div>
+        <div class="kpi-value" id="kpiSales">₹0</div>
+    </div>
+    
+    <div class="kpi-card" style="border-left: 4px solid #8b5cf6;">
+        <div class="kpi-icon" style="background: #f5f3ff; color: #8b5cf6;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+        </div>
+        <div class="kpi-title">Total Points Earned</div>
+        <div class="kpi-value" id="kpiEarned">0</div>
+    </div>
+    
+    <div class="kpi-card" style="border-left: 4px solid #f59e0b;">
+        <div class="kpi-icon" style="background: #fffbeb; color: #f59e0b;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <div class="kpi-title">Total Points Redeemed</div>
+        <div class="kpi-value" id="kpiRedeemed">0</div>
+    </div>
+    
+    <div class="kpi-card" style="border-left: 4px solid #ef4444;">
+        <div class="kpi-icon" style="background: #fef2f2; color: #ef4444;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        </div>
+        <div class="kpi-title">Total Points Expired</div>
+        <div class="kpi-value" id="kpiExpired">0</div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="chart-container">
+    <div class="chart-card">
+        <div class="chart-header">
+            Top 10 Customers by Points Earned
+        </div>
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="topCustomersChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="chart-card">
+        <div class="chart-header">
+            Points Redemption vs Expiration
+        </div>
+        <div style="position: relative; height: 300px; width: 100%; display: flex; justify-content: center;">
+            <canvas id="redemptionChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Table -->
+<div class="card" style="padding: 0; overflow: hidden; margin-bottom: 40px;">
+    <div style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: white;">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700;">Detailed Customer Analytics</h3>
+        
+        <div style="position: relative;">
+            <svg style="position: absolute; left: 12px; top: 10px; color: var(--text-muted);" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="searchInput" placeholder="Search customers..." style="padding: 8px 12px 8px 36px; border: 1px solid var(--border-color); border-radius: 8px; width: 250px; font-size: 13px; outline: none; transition: border-color 0.2s;" onkeyup="filterTable()">
+        </div>
+    </div>
+    
+    <div class="table-container" style="max-height: 600px; overflow-y: auto;">
+        <table class="data-table" id="analyticsTable">
+            <thead style="position: sticky; top: 0; z-index: 10;">
+                <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>Customer Name</th>
+                    <th class="text-right">Visits (Inv)</th>
+                    <th class="text-right">Total Sales (₹)</th>
+                    <th class="text-right">Points Earned</th>
+                    <th class="text-right">Redeemed</th>
+                    <th class="text-right">Expired</th>
+                    <th class="text-right">Current Balance</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 60px;">
+                        <div class="loader-spinner" style="width: 30px; height: 30px; border: 3px solid var(--border-color); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
+                        <div style="color: var(--text-muted); font-weight: 500;">Loading analytics data...</div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+<script>
+    let analyticsData = [];
+    
+    function formatMoney(amount) {
+        return parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    
+    function formatNumber(num) {
+        return parseFloat(num).toLocaleString('en-IN');
+    }
+
+    async function loadAnalytics() {
+        try {
+            const response = await fetch('/api/point_analytics');
+            analyticsData = await response.json();
+            
+            if (response.ok) {
+                renderKPIs();
+                renderCharts();
+                renderTable(analyticsData);
+            } else {
+                document.getElementById('tableBody').innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--error-red); padding: 40px;">Error loading data: ${analyticsData.error}</td></tr>`;
+            }
+        } catch (error) {
+            console.error('Error fetching analytics:', error);
+            document.getElementById('tableBody').innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--error-red); padding: 40px;">Network error occurred while fetching analytics.</td></tr>`;
+        }
+    }
+    
+    function renderKPIs() {
+        let members = analyticsData.length;
+        let totalSales = 0;
+        let totalEarned = 0;
+        let totalRedeemed = 0;
+        let totalExpired = 0;
+        
+        analyticsData.forEach(d => {
+            totalSales += d.total_sales;
+            totalEarned += d.points_in;
+            totalRedeemed += d.points_out;
+            totalExpired += d.expired_pts;
+        });
+        
+        document.getElementById('kpiMembers').textContent = formatNumber(members);
+        document.getElementById('kpiSales').textContent = '₹' + formatMoney(totalSales);
+        document.getElementById('kpiEarned').textContent = formatMoney(totalEarned);
+        document.getElementById('kpiRedeemed').textContent = formatMoney(totalRedeemed);
+        document.getElementById('kpiExpired').textContent = formatMoney(totalExpired);
+    }
+    
+    function renderCharts() {
+        // 1. Top 10 Customers Chart (Bar)
+        const top10 = [...analyticsData].sort((a, b) => b.points_in - a.points_in).slice(0, 10);
+        
+        const ctxBar = document.getElementById('topCustomersChart').getContext('2d');
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: top10.map(d => {
+                    const name = d.party_name;
+                    return name.length > 15 ? name.substring(0, 15) + '...' : name;
+                }),
+                datasets: [
+                    {
+                        label: 'Points Earned',
+                        data: top10.map(d => d.points_in),
+                        backgroundColor: 'rgba(139, 92, 246, 0.8)',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Points Redeemed',
+                        data: top10.map(d => d.points_out),
+                        backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [2, 4], color: '#e2e8f0' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+        
+        // 2. Redemption vs Expiration (Doughnut)
+        let totalEarned = 0;
+        let totalRedeemed = 0;
+        let totalExpired = 0;
+        
+        analyticsData.forEach(d => {
+            totalEarned += d.points_in;
+            totalRedeemed += d.points_out;
+            totalExpired += d.expired_pts;
+        });
+        
+        const unused = Math.max(0, totalEarned - totalRedeemed - totalExpired);
+        
+        const ctxDoughnut = document.getElementById('redemptionChart').getContext('2d');
+        new Chart(ctxDoughnut, {
+            type: 'doughnut',
+            data: {
+                labels: ['Redeemed', 'Expired', 'Unused / Active'],
+                datasets: [{
+                    data: [totalRedeemed, totalExpired, unused],
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.8)', // Emerald
+                        'rgba(239, 68, 68, 0.8)',  // Red
+                        'rgba(59, 130, 246, 0.8)'  // Blue
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+    
+    function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px;">No loyalty program data found.</td></tr>`;
+            return;
+        }
+        
+        data.forEach((d, index) => {
+            const tr = document.createElement('tr');
+            
+            // Format balance badge
+            let balClass = 'badge-primary';
+            if (d.balance > 1000) balClass = 'badge-success';
+            else if (d.balance === 0) balClass = '';
+            
+            tr.innerHTML = `
+                <td style="color: var(--text-muted);">${index + 1}</td>
+                <td style="font-weight: 600;"><a href="/points?code=${d.party_code}&name=${encodeURIComponent(d.party_name)}" style="color: var(--accent-indigo); text-decoration: none;">${d.party_name}</a></td>
+                <td class="text-right" style="font-weight: 500;">${d.invoice_count}</td>
+                <td class="text-right" style="color: #15803d; font-weight: 600;">₹${formatMoney(d.total_sales)}</td>
+                <td class="text-right" style="color: #4338ca; font-weight: 500;">${formatMoney(d.points_in)}</td>
+                <td class="text-right" style="color: #b45309;">${formatMoney(d.points_out)}</td>
+                <td class="text-right" style="color: #b91c1c;">${formatMoney(d.expired_pts)}</td>
+                <td class="text-right"><span class="badge ${balClass}" style="${d.balance === 0 ? 'background: #f1f5f9; color: #94a3b8;' : ''}">${formatMoney(d.balance)}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    
+    function filterTable() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = analyticsData.filter(d => 
+            d.party_name.toLowerCase().includes(query)
+        );
+        renderTable(filtered);
+    }
+
+    // Load data on start
+    document.addEventListener('DOMContentLoaded', loadAnalytics);
+</script>
+{% endblock %}

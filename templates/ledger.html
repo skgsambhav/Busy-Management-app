@@ -1,0 +1,645 @@
+{% extends "base.html" %}
+
+{% block title %}Account Ledger{% endblock %}
+{% block page_title %}Account Ledger Statement{% endblock %}
+{% block page_subtitle %}Search and view complete financial statement for any account{% endblock %}
+
+{% block content %}
+<div class="ledger-wrapper">
+
+    <!-- Search Section -->
+    <div class="card search-card-redesigned">
+        <div class="search-card-body">
+            <label class="search-label">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                SELECT PARTY ACCOUNT
+            </label>
+            <div class="search-input-wrapper">
+                <svg class="search-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="partySearch" class="form-control ledger-search-input" placeholder="Type party name (e.g. Rajendra, Gaurav, etc.)..." autocomplete="off">
+                <div id="partyDropdown" class="dropdown-list hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State Prompt -->
+    <div id="emptyPrompt" class="card empty-ledger-card">
+        <div class="empty-state-content">
+            <div class="empty-icon">📊</div>
+            <h3>No Account Selected</h3>
+            <p>Please type and select a party account above to view the detailed statement.</p>
+        </div>
+    </div>
+
+    <!-- Main Ledger Statement Container -->
+    <div id="ledgerCard" class="ledger-statement-card hidden">
+
+        <!-- Statement Header Header Info -->
+        <div class="card statement-header-card">
+            <div class="party-info-main">
+                <div class="party-badge-row">
+                    <span class="badge badge-emerald">Active Account</span>
+                    <span class="badge badge-indigo">FY 2026-27</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <h2 id="lblAccountName" class="statement-party-name">Account Name</h2>
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        <div id="lblMobile" style="display: none; align-items: center; gap: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 6px 14px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.36 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.11 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8 8a16 16 0 0 0 6 6l.36-.36a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                            <span id="lblMobileNo" style="font-size: 15px; font-weight: 700; color: #16a34a;"></span>
+                        </div>
+                        <button id="btnPendingBalance" onclick="showPendingBills()" style="display: none; align-items: center; gap: 6px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                            Pending Balances
+                        </button>
+                    </div>
+                </div>
+                <div id="lblAddress" style="display: none; font-size: 13px; color: var(--text-muted); margin-top: 4px;"></div>
+                
+                <!-- WhatsApp sending panel for Ledger -->
+                <div id="ledgerWhatsappPanel" style="display: none; align-items: center; gap: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 10px 16px; margin-top: 14px; flex-wrap: wrap;">
+                    <div style="font-size: 13px; font-weight: 700; color: #16a34a; display: flex; align-items: center; gap: 6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.36 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.11 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8 8a16 16 0 0 0 6 6l.36-.36a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        Send Ledger via WhatsApp:
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; flex: 1; min-width: 300px;">
+                        <input type="text" id="ledgerWhatsappPhone" class="form-control" style="width: 140px; height: 34px; padding: 4px 8px; font-size: 13px; border-radius: 6px; border: 1px solid #86efac; background: white;" placeholder="Mobile Number">
+                        <button id="ledgerSendPdfWhatsappBtn" onclick="sendLedgerLink()" class="btn" style="height: 34px; font-size: 13px; font-weight: 700; background: #7c3aed; color: white; border: none; padding: 0 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                            🔗 Send Ledger Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Summary Cards Grid -->
+        <div class="ledger-stats-grid">
+            <div class="ledger-stat-card stat-op">
+                <span class="stat-title">OPENING BALANCE</span>
+                <span id="lblOpeningBalance" class="stat-value" style="color: var(--text-secondary);">₹0.00</span>
+            </div>
+            <div class="ledger-stat-card stat-dr">
+                <span class="stat-title">TOTAL DEBIT (DR)</span>
+                <span id="lblTotalDebit" class="stat-value text-dr">₹0.00</span>
+            </div>
+            <div class="ledger-stat-card stat-cr">
+                <span class="stat-title">TOTAL CREDIT (CR)</span>
+                <span id="lblTotalCredit" class="stat-value text-cr">₹0.00</span>
+            </div>
+            <div class="ledger-stat-card stat-closing">
+                <span class="stat-title">CLOSING BALANCE</span>
+                <span id="lblClosingBalance" class="stat-value text-net">₹0.00</span>
+            </div>
+        </div>
+
+        <!-- Statement Data Table -->
+        <div class="card table-card">
+            <div class="table-responsive">
+                <table class="ledger-modern-table" id="ledgerTable">
+                    <thead>
+                        <tr>
+                            <th>DATE</th>
+                            <th>TYPE</th>
+                            <th>VCH / BILL NO</th>
+                            <th>PARTICULARS (ACCOUNT)</th>
+                            <th class="text-right">DEBIT (₹)</th>
+                            <th class="text-right">CREDIT (₹)</th>
+                            <th class="text-right">RUNNING BALANCE (₹)</th>
+                            <th>NARRATION</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerBody">
+                        <!-- Rows dynamically populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<style>
+.ledger-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Search Card */
+.search-card-redesigned {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: visible !important;
+}
+
+.search-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-indigo);
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+}
+
+.ledger-search-input {
+    background: var(--bg-input) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    height: 48px;
+    border-radius: 8px !important;
+    padding-left: 44px !important;
+    transition: all 0.2s ease;
+}
+
+.ledger-search-input:focus {
+    border-color: var(--accent-indigo) !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12) !important;
+}
+
+.search-icon-svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+/* Empty Prompt */
+.empty-ledger-card {
+    padding: 60px 20px;
+    text-align: center;
+    background: #ffffff;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+}
+.empty-icon {
+    font-size: 42px;
+    margin-bottom: 12px;
+}
+.empty-ledger-card h3 {
+    font-size: 18px;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+.empty-ledger-card p {
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+/* Statement Card Container */
+.ledger-statement-card {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Statement Header */
+.statement-header-card {
+    padding: 20px 24px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+}
+.party-badge-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.statement-party-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+/* Stats Grid Cards */
+.ledger-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+.ledger-stat-card {
+    padding: 18px 20px;
+    border-radius: var(--radius);
+    background: #ffffff;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: var(--shadow-card);
+}
+.stat-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+}
+.stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.text-dr { color: var(--accent-rose) !important; }
+.text-cr { color: var(--accent-emerald) !important; }
+.text-net { color: var(--accent-indigo) !important; }
+
+.stat-closing {
+    background: linear-gradient(135deg, #e0e7ff, #ede9fe);
+    border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+/* Modern Table Styling */
+.table-card {
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #ffffff;
+}
+.ledger-modern-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.ledger-modern-table thead th {
+    background: #f8fafc;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+}
+.ledger-modern-table tbody td {
+    padding: 16px;
+    font-size: 14px;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+.ledger-modern-table tbody tr:hover {
+    background: #f1f5f9;
+}
+.ledger-modern-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+.opp-account-badge {
+    background: #f1f5f9;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.narration-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+</style>
+
+<!-- Hidden Printable Template for PDF -->
+<div id="ledgerPdfWrapper" style="display: none; position: fixed; top: 0; left: -9999px; width: 710px; background: #fff; z-index: -9999;">
+    <div id="ledgerPrintTemplate" style="width: 710px; padding: 15px 15px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: #000; background: #fff; box-sizing: border-box;">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 15px;">
+            <div>
+                <h1 style="font-size: 22px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; color: #1e1b4b;">GOPAL MARKETING</h1>
+                <div style="font-size: 12px; font-weight: 600; color: #475569; margin-top: 3px;">ACCOUNT LEDGER STATEMENT</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 12px; font-weight: 700; color: #4f46e5;">FINANCIAL YEAR 2026-27</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 3px;" id="pdfPrintDate"></div>
+            </div>
+        </div>
+
+        <!-- Party & Summary Info -->
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px 16px; margin-bottom: 15px;">
+            <div style="font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 8px;" id="pdfPartyName"></div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; background: #ffffff; padding: 8px 12px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                <div>Opening Bal: <span id="pdfOpBal" style="font-weight: 700;"></span></div>
+                <div>Total Dr: <span id="pdfTotalDr" style="color: #dc2626;"></span></div>
+                <div>Total Cr: <span id="pdfTotalCr" style="color: #16a34a;"></span></div>
+                <div>Closing Bal: <span id="pdfClosingBal" style="font-weight: 800; color: #4f46e5;"></span></div>
+            </div>
+        </div>
+
+        <!-- Statement Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+                <tr style="background: #e0e7ff; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000;">
+                    <th style="padding: 6px 8px; font-size: 11px; font-weight: 800; text-align: center; border-right: 1px solid #cbd5e1; width: 4%;">#</th>
+                    <th style="padding: 6px 8px; font-size: 11px; font-weight: 800; text-align: left; border-right: 1px solid #cbd5e1; width: 12%;">Date</th>
+                    <th style="padding: 6px 8px; font-size: 11px; font-weight: 800; text-align: left; border-right: 1px solid #cbd5e1; width: 10%;">Type</th>
+                    <th style="padding: 6px 8px; font-size: 11px; font-weight: 800; text-align: left; border-right: 1px solid #cbd5e1; width: 14%;">Vch / Bill No</th>
+                    <th style="padding: 6px 8px; font-size: 11px; font-weight: 800; text-align: left; border-right: 1px solid #cbd5e1; width: 22%;">Particulars</th>
+                    <th style="padding: 6px 8px; font-size: 11px; font-weight: 800; text-align: right; border-right: 1px solid #cbd5e1; width: 12%;">Debit (₹)</th>
+                    <th style="padding: 6px 8px; font-size: 11px; font-weight: 800; text-align: right; border-right: 1px solid #cbd5e1; width: 12%;">Credit (₹)</th>
+                    <th style="padding: 6px 8px; font-size: 11px; font-weight: 800; text-align: right; width: 14%;">Balance (₹)</th>
+                </tr>
+            </thead>
+            <tbody id="pdfTableBody">
+            </tbody>
+        </table>
+
+        <!-- Footer -->
+        <div style="border-top: 1.5px solid #000; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #475569;">
+            <div>Computer Generated Statement - <strong>GOPAL MARKETING</strong></div>
+            <div style="font-size: 13px; font-weight: 800; color: #000;">Closing Balance: <span id="pdfFooterClosingBal"></span></div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    let currentPartyCode = null;
+    let currentPartyName = '';
+    const searchInput = document.getElementById('partySearch');
+    const dropdown = document.getElementById('partyDropdown');
+    const ledgerCard = document.getElementById('ledgerCard');
+    const emptyPrompt = document.getElementById('emptyPrompt');
+    
+    let debounceTimer;
+    let selectedIndex = -1;
+
+    function updateSelection(items) {
+        items.forEach((item, index) => {
+            if (index === selectedIndex) {
+                item.classList.add('active');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        const query = e.target.value.trim();
+        if (query.length < 2) {
+            dropdown.classList.add('hidden');
+            selectedIndex = -1;
+            return;
+        }
+        
+        debounceTimer = setTimeout(() => {
+            fetch(`/api/parties?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    dropdown.innerHTML = '';
+                    selectedIndex = -1;
+                    if (data.length === 0) {
+                        dropdown.innerHTML = '<div class="dropdown-item" style="color: var(--text-muted);">No accounts found</div>';
+                    } else {
+                        data.forEach((party, idx) => {
+                            const div = document.createElement('div');
+                            div.className = 'dropdown-item';
+                            div.textContent = party.name;
+                            div.onclick = () => loadLedger(party.code, party.name);
+                            div.onmouseenter = () => {
+                                selectedIndex = idx;
+                                updateSelection(dropdown.querySelectorAll('.dropdown-item'));
+                            };
+                            dropdown.appendChild(div);
+                        });
+                    }
+                    dropdown.classList.remove('hidden');
+                });
+        }, 250);
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+        const items = dropdown.querySelectorAll('.dropdown-item');
+        if (dropdown.classList.contains('hidden') || items.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (selectedIndex < items.length - 1) {
+                selectedIndex++;
+            } else {
+                selectedIndex = 0;
+            }
+            updateSelection(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (selectedIndex > 0) {
+                selectedIndex--;
+            } else {
+                selectedIndex = items.length - 1;
+            }
+            updateSelection(items);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIndex >= 0 && selectedIndex < items.length) {
+                items[selectedIndex].click();
+            } else if (items.length > 0 && items[0].textContent !== 'No accounts found') {
+                items[0].click();
+            }
+        } else if (e.key === 'Escape') {
+            dropdown.classList.add('hidden');
+            selectedIndex = -1;
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+            selectedIndex = -1;
+        }
+    });
+    
+    function formatMoney(amount) {
+        return parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    
+    function formatDrCr(amount) {
+        if (amount < 0) return `₹${formatMoney(Math.abs(amount))} Dr`;
+        if (amount > 0) return `₹${formatMoney(amount)} Cr`;
+        return `₹0.00`;
+    }
+    
+    function getVchBadge(typeCode) {
+        switch(parseInt(typeCode)) {
+            case 14: return '<span class="badge badge-emerald">Receipt</span>';
+            case 9:  return '<span class="badge badge-amber">Sale</span>';
+            case 8:  return '<span class="badge badge-purple">Purchase</span>';
+            case 15: return '<span class="badge badge-rose">Payment</span>';
+            default: return `<span class="badge badge-sky">Type ${typeCode}</span>`;
+        }
+    }
+
+    function loadLedger(code, name) {
+        currentPartyCode = code;
+        currentPartyName = name;
+        searchInput.value = name;
+        dropdown.classList.add('hidden');
+        
+        fetch(`/api/ledger/${code}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) {
+                    showToast(data.error, "error");
+                    return;
+                }
+                
+                document.getElementById('lblAccountName').textContent = name;
+                
+                let runningBalance = data.op_bal || 0;
+                document.getElementById('lblOpeningBalance').textContent = formatDrCr(runningBalance);
+                
+                const tbody = document.getElementById('ledgerBody');
+                tbody.innerHTML = '';
+                
+                let totalDr = 0;
+                let totalCr = 0;
+                
+                if (!data.transactions || data.transactions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 40px; color: var(--text-muted);">No transactions found for this financial year.</td></tr>';
+                } else {
+                    data.transactions.forEach(row => {
+                        let drStr = "-";
+                        let crStr = "-";
+                        
+                        if (row.amount < 0) {
+                            let drVal = Math.abs(row.amount);
+                            drStr = `<span class="text-dr" style="font-weight:700;">₹${formatMoney(drVal)}</span>`;
+                            totalDr += drVal;
+                        } else if (row.amount > 0) {
+                            let crVal = row.amount;
+                            crStr = `<span class="text-cr" style="font-weight:700;">₹${formatMoney(crVal)}</span>`;
+                            totalCr += crVal;
+                        }
+                        
+                        runningBalance += row.amount;
+                        
+                        let fDate = row.date;
+                        
+                        let vch_display = `<span class="badge badge-sky" style="font-family: monospace; font-size: 13px;">${row.vch_no}</span>`;
+                        if (row.type_code == 9 && row.vch_no) { // Sale
+                            vch_display = `<a href="/sales?date=${fDate}&open=${row.vcode}" target="_blank" style="text-decoration: none;" title="View Sale Voucher">
+                                <span class="badge badge-sky" style="font-family: monospace; font-size: 13px; cursor: pointer; border: 1px solid #bae6fd; background: #e0f2fe; color: #0369a1; transition: all 0.2s;" onmouseover="this.style.background='#bae6fd'; this.style.transform='scale(1.05)';" onmouseout="this.style.background='#e0f2fe'; this.style.transform='none';">📄 ${row.vch_no}</span>
+                            </a>`;
+                        }
+                        
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="font-weight: 600; color: var(--text-primary);">${fDate}</td>
+                            <td>${getVchBadge(row.type_code)}</td>
+                            <td>${vch_display}</td>
+                            <td><span class="opp-account-badge">${row.opp_account || "—"}</span></td>
+                            <td class="text-right">${drStr}</td>
+                            <td class="text-right">${crStr}</td>
+                            <td class="text-right" style="font-weight: 700; color: var(--text-primary);">${formatDrCr(runningBalance)}</td>
+                            <td class="narration-text">${row.narration || "—"}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+                
+                document.getElementById('lblTotalDebit').textContent = `₹${formatMoney(totalDr)}`;
+                document.getElementById('lblTotalCredit').textContent = `₹${formatMoney(totalCr)}`;
+                
+                const closingEl = document.getElementById('lblClosingBalance');
+                closingEl.textContent = formatDrCr(runningBalance);
+                
+                emptyPrompt.classList.add('hidden');
+                ledgerCard.classList.remove('hidden');
+                
+                window.currentLedgerData = data;
+                
+                // Prefill WhatsApp phone
+                window.activeLedgerPartyCode = code;
+                document.getElementById('ledgerWhatsappPhone').value = data.mobile || '';
+                document.getElementById('ledgerWhatsappPanel').style.display = 'flex';
+            })
+            .catch(err => {
+                showToast("Failed to load ledger data", "error");
+            });
+    }
+
+    // Auto-load if code and name parameters are passed in URL
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramCode = urlParams.get('code');
+        const paramName = urlParams.get('name');
+        if (paramCode && paramName && paramCode !== 'undefined') {
+            loadLedger(paramCode, paramName);
+        }
+    });
+
+    window.activeLedgerPartyCode = null;
+
+
+
+    // ── NEW: Send Ledger as R2 HTML Link (replaces old PDF system) ────────
+    function sendLedgerLink() {
+        const partyCode = currentPartyCode || window.activeLedgerPartyCode;
+        const phone = document.getElementById('ledgerWhatsappPhone').value.trim();
+        const btn = document.getElementById('ledgerSendPdfWhatsappBtn');
+
+        if (!phone) {
+            showToast('Please enter a valid mobile number', 'error');
+            return;
+        }
+        if (!partyCode) {
+            showToast('Please select a party first', 'error');
+            return;
+        }
+
+        btn.disabled = true;
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = `<span class="loader-spinner" style="width:12px;height:12px;border-width:2px;border-top-color:white;display:inline-block;margin-right:4px;"></span> Uploading...`;
+
+        fetch('/api/ledger/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                party_code: partyCode,
+                phone: phone
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast('✅ Ledger statement link sent via WhatsApp! Customer can open it on mobile.', 'success');
+            } else {
+                showToast('Failed to send ledger link: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(() => showToast('Network error: Failed to send ledger link', 'error'))
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        });
+    }
+
+</script>
+{% endblock %}
+

@@ -1,0 +1,598 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Entry{% endblock %}
+{% block page_title %}New Sales Entry{% endblock %}
+{% block page_subtitle %}Create a Sales Invoice in Busy with Bill-by-Bill references{% endblock %}
+
+{% block content %}
+<div class="form-layout">
+
+  <!-- Entry Form -->
+  <div class="form-panel" style="flex: 1; max-width: 100%;">
+    <div class="card" style="overflow: visible;">
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22 6 12 13 2 6"></polyline></svg>
+          Sales Invoice Details
+        </h2>
+        <span class="badge badge-rose">Series: Main (GMSALE)</span>
+      </div>
+
+      <form id="salesForm" class="receipt-form" style="padding: 24px;" novalidate>
+
+        <!-- Header Info -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="date">Date <span class="required" style="color: var(--accent-rose);">*</span></label>
+            <input type="date" id="date" name="date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Voucher No.</label>
+            <div class="form-control readonly-field" style="background: #f8fafc; font-weight: 600; color: var(--accent-rose);">Auto</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex: 2;">
+            <label class="form-label" for="customerSearch">Customer (Party) <span class="required" style="color: var(--accent-rose);">*</span></label>
+            <div class="search-input-wrapper">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="customerSearch" class="form-control search-input" 
+                     placeholder="Type customer name to search..." autocomplete="off">
+              <input type="hidden" id="customerCode" name="customer_code" required>
+              <div id="customerDropdown" class="dropdown-list hidden"></div>
+            </div>
+          </div>
+          
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label" for="saleType">Sale Type</label>
+            <select id="saleType" class="form-control">
+              <option value="L_GST">Local B2B</option>
+              <option value="L_B2C">Local B2C</option>
+              <option value="I_GST">Inter-State B2B</option>
+              <option value="L_EXEMPT">Local Exempt</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Item Grid -->
+        <div class="bill-section" style="margin-top: 30px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;">
+          <div class="bill-header" style="background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="bill-title" style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+              Inventory Items
+            </h3>
+            <button type="button" class="btn btn-secondary btn-sm" id="addItemBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Add Row
+            </button>
+          </div>
+          
+          <div class="table-responsive">
+            <table class="data-table" id="itemsTable">
+              <thead>
+                <tr>
+                  <th width="40%">Item Name</th>
+                  <th width="15%">Qty</th>
+                  <th width="10%">Unit</th>
+                  <th width="15%">Price</th>
+                  <th width="15%">Amount</th>
+                  <th width="5%"></th>
+                </tr>
+              </thead>
+              <tbody id="itemsBody">
+                <!-- Rows will be added dynamically -->
+              </tbody>
+              <tfoot>
+                <tr style="background: #f8fafc; font-weight: 700;">
+                  <td colspan="4" style="text-align: right; padding-right: 15px;">Sub Total:</td>
+                  <td id="subTotal" style="color: var(--accent-indigo);">0.00</td>
+                  <td></td>
+                </tr>
+                <tr style="background: #f8fafc; font-weight: 700;">
+                  <td colspan="4" style="text-align: right; padding-right: 15px;">GST / Taxes:</td>
+                  <td id="taxTotal" style="color: var(--accent-rose);">0.00</td>
+                  <td></td>
+                </tr>
+                <tr style="background: #eef2ff; font-weight: 800; font-size: 15px;">
+                  <td colspan="4" style="text-align: right; padding-right: 15px;">Grand Total:</td>
+                  <td id="grandTotal" style="color: #4338ca;">0.00</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Bill-by-Bill Section (for adjusting advance receipts) -->
+        <div id="billSection" class="bill-section hidden" style="margin-top: 30px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;">
+          <div class="bill-header" style="background: #fff1f2; padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="bill-title" style="font-size: 14px; font-weight: 700; color: #be123c; margin: 0; display: flex; align-items: center; gap: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#be123c" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              Bill-by-Bill Allocation (Adjust Advances)
+            </h3>
+            <div class="bill-summary" style="font-size: 13px; color: var(--text-muted);">
+              Adjusted: <strong id="totalAdjusted" style="color: var(--accent-rose);">₹0.00</strong>
+              &nbsp;|&nbsp; Unadjusted (New Ref): <strong id="remainingAmount" style="color: var(--accent-indigo);">₹0.00</strong>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table bills-table">
+              <thead>
+                <tr>
+                  <th width="40">
+                    <input type="checkbox" id="selectAllBills" class="checkbox">
+                  </th>
+                  <th>Bill No. (Advances/Returns)</th>
+                  <th>Date</th>
+                  <th>Due Date</th>
+                  <th class="text-right">Original (₹)</th>
+                  <th class="text-right">Outstanding (₹)</th>
+                  <th class="text-right" width="140">Adjust Amount (₹)</th>
+                </tr>
+              </thead>
+              <tbody id="billsTableBody">
+                <tr><td colspan="7" class="empty-state" style="text-align: center; padding: 20px; color: var(--text-muted);">Select a customer first to load pending advances</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 20px;">
+          <label class="form-label" for="narration">Narration</label>
+          <input type="text" id="narration" name="narration" class="form-control" placeholder="Optional notes for this invoice...">
+        </div>
+
+        <!-- Submit actions -->
+        <div class="form-actions" style="margin-top: 30px; display: flex; justify-content: flex-end; gap: 12px;">
+          <button type="button" class="btn btn-secondary" onclick="window.history.back()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            Save Sales Invoice
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let customersData = [];
+  let itemsData = [];
+  let currentBills = [];
+  let currentGrandTotal = 0;
+  
+  document.getElementById('date').valueAsDate = new Date();
+  
+  async function loadData() {
+    try {
+      const [custRes, itemsRes] = await Promise.all([
+        fetch('/api/sales/customers'),
+        fetch('/api/sales/items')
+      ]);
+      const custJson = await custRes.json();
+      const itemsJson = await itemsRes.json();
+      
+      if(custJson.success) customersData = custJson.customers;
+      if(itemsJson.success) itemsData = itemsJson.items;
+      
+      addNewItemRow();
+    } catch(err) {
+      console.error("Failed to load data", err);
+    }
+  }
+  
+  const customerSearch = document.getElementById('customerSearch');
+  const customerDropdown = document.getElementById('customerDropdown');
+  const customerCodeInput = document.getElementById('customerCode');
+  
+  let debounceTimer;
+  customerSearch.addEventListener('input', function(e) {
+    clearTimeout(debounceTimer);
+    const val = e.target.value.toLowerCase();
+    customerDropdown.innerHTML = '';
+    
+    if (!val) {
+      customerDropdown.classList.add('hidden');
+      customerCodeInput.value = '';
+      document.getElementById('billSection').classList.add('hidden');
+      return;
+    }
+    
+    debounceTimer = setTimeout(() => {
+      const matches = customersData.filter(s => s.name.toLowerCase().includes(val)).slice(0, 10);
+      
+      if (matches.length > 0) {
+        matches.forEach(cust => {
+          const div = document.createElement('div');
+          div.className = 'dropdown-item';
+          div.innerHTML = `
+            <div style="font-weight: 600;">${cust.name}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">${cust.group}</div>
+          `;
+          div.addEventListener('click', () => {
+            customerSearch.value = cust.name;
+            customerCodeInput.value = cust.code;
+            customerDropdown.classList.add('hidden');
+            fetchPendingBills(cust.code);
+          });
+          customerDropdown.appendChild(div);
+        });
+        customerDropdown.classList.remove('hidden');
+      } else {
+        customerDropdown.classList.add('hidden');
+      }
+    }, 300);
+  });
+  
+  document.addEventListener('click', function(e) {
+    if (!customerSearch.contains(e.target) && !customerDropdown.contains(e.target)) {
+      customerDropdown.classList.add('hidden');
+    }
+  });
+
+  async function fetchPendingBills(partyCode) {
+    const tbody = document.getElementById('billsTableBody');
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;"><span class="spinner" style="border-top-color: var(--accent-rose);"></span> Loading bills...</td></tr>';
+    
+    try {
+        const res = await fetch(`/api/sales/pending_bills/${partyCode}`);
+        const data = await res.json();
+        
+        if (data.success && data.bills.length > 0) {
+            currentBills = data.bills;
+            document.getElementById('billSection').classList.remove('hidden');
+            renderBills();
+        } else {
+            currentBills = [];
+            document.getElementById('billSection').classList.remove('hidden');
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state" style="text-align: center; padding: 20px; color: var(--text-muted);">No pending bills found</td></tr>';
+            updateBillSummary();
+        }
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state" style="text-align: center; padding: 20px; color: var(--accent-rose);">Failed to load bills</td></tr>';
+        console.error(e);
+    }
+  }
+
+  function renderBills() {
+      const tbody = document.getElementById('billsTableBody');
+      tbody.innerHTML = '';
+      
+      currentBills.forEach((bill, idx) => {
+          const remaining = parseFloat(bill.remaining_amount);
+          
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+              <td><input type="checkbox" class="checkbox bill-select" data-index="${idx}"></td>
+              <td style="font-weight: 500;">${bill.ref_no}</td>
+              <td style="color: var(--text-muted); font-size: 13px;">${bill.date}</td>
+              <td style="color: var(--text-muted); font-size: 13px;">${bill.due_date || '-'}</td>
+              <td class="text-right" style="color: var(--text-muted);">${parseFloat(bill.amount).toFixed(2)}</td>
+              <td class="text-right" style="font-weight: 600;">${remaining.toFixed(2)}</td>
+              <td>
+                  <input type="number" class="form-control text-right bill-pay-amt" 
+                         value="0.00" min="0" max="${remaining}" step="0.01" disabled
+                         data-index="${idx}" style="font-weight: 700; color: var(--accent-rose);">
+              </td>
+          `;
+          tbody.appendChild(tr);
+      });
+      
+      document.querySelectorAll('.bill-select').forEach(cb => {
+          cb.addEventListener('change', handleBillSelection);
+      });
+      document.querySelectorAll('.bill-pay-amt').forEach(input => {
+          input.addEventListener('input', updateBillSummary);
+      });
+      
+      document.getElementById('selectAllBills').checked = false;
+      document.getElementById('selectAllBills').addEventListener('change', (e) => {
+          const isChecked = e.target.checked;
+          document.querySelectorAll('.bill-select').forEach(cb => {
+              if (cb.checked !== isChecked) {
+                  cb.checked = isChecked;
+                  handleBillSelection({target: cb});
+              }
+          });
+      });
+      
+      updateBillSummary();
+  }
+
+  function handleBillSelection(e) {
+      const cb = e.target;
+      const idx = cb.getAttribute('data-index');
+      const input = document.querySelector(`.bill-pay-amt[data-index="${idx}"]`);
+      
+      if (cb.checked) {
+          input.disabled = false;
+          let currentAllocated = 0;
+          document.querySelectorAll('.bill-pay-amt').forEach(inp => {
+              if (!inp.disabled && inp !== input) currentAllocated += parseFloat(inp.value) || 0;
+          });
+          
+          let unallocated = Math.max(0, currentGrandTotal - currentAllocated);
+          const maxAllowed = parseFloat(input.getAttribute('max'));
+          
+          if (unallocated > 0) {
+              input.value = Math.min(unallocated, maxAllowed).toFixed(2);
+          } else {
+              input.value = maxAllowed.toFixed(2);
+          }
+      } else {
+          input.disabled = true;
+          input.value = '0.00';
+      }
+      updateBillSummary();
+  }
+
+  function updateBillSummary() {
+      let totalAdj = 0;
+      document.querySelectorAll('.bill-pay-amt').forEach(input => {
+          if (!input.disabled) {
+              let val = parseFloat(input.value) || 0;
+              let max = parseFloat(input.getAttribute('max'));
+              if (val > max) { val = max; input.value = max.toFixed(2); }
+              totalAdj += val;
+          }
+      });
+      
+      document.getElementById('totalAdjusted').innerText = '₹' + totalAdj.toFixed(2);
+      
+      let remaining = currentGrandTotal - totalAdj;
+      document.getElementById('remainingAmount').innerText = '₹' + remaining.toFixed(2);
+  }
+
+  // Dynamic Item Grid Logic
+  const itemsBody = document.getElementById('itemsBody');
+  document.getElementById('addItemBtn').addEventListener('click', addNewItemRow);
+  
+  function addNewItemRow() {
+    const tr = document.createElement('tr');
+    tr.className = 'item-row';
+    
+    tr.innerHTML = `
+      <td style="position: relative;">
+        <input type="text" class="form-control item-search" placeholder="Search item..." autocomplete="off">
+        <input type="hidden" class="item-code">
+        <div class="dropdown-list hidden item-dropdown" style="top: 40px;"></div>
+      </td>
+      <td>
+        <input type="number" class="form-control item-qty" value="1" min="1" step="any">
+      </td>
+      <td>
+        <input type="text" class="form-control item-unit readonly-field" readonly style="background: #f8fafc;">
+      </td>
+      <td>
+        <input type="number" class="form-control item-price" value="0.00" min="0" step="any">
+      </td>
+      <td>
+        <input type="text" class="form-control item-amount readonly-field" readonly value="0.00" style="background: #f8fafc; font-weight: 600;">
+      </td>
+      <td>
+        <button type="button" class="btn btn-sm btn-remove-row" style="padding: 6px; color: var(--accent-rose); background: rgba(244, 63, 94, 0.1); border: none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </td>
+    `;
+    
+    itemsBody.appendChild(tr);
+    
+    const searchInput = tr.querySelector('.item-search');
+    const dropdown = tr.querySelector('.item-dropdown');
+    const codeInput = tr.querySelector('.item-code');
+    const unitInput = tr.querySelector('.item-unit');
+    const priceInput = tr.querySelector('.item-price');
+    const qtyInput = tr.querySelector('.item-qty');
+    const amountInput = tr.querySelector('.item-amount');
+    const removeBtn = tr.querySelector('.btn-remove-row');
+    
+    removeBtn.addEventListener('click', () => {
+      tr.remove();
+      calculateTotals();
+    });
+    
+    const calcAmt = () => {
+      const q = parseFloat(qtyInput.value) || 0;
+      const p = parseFloat(priceInput.value) || 0;
+      amountInput.value = (q * p).toFixed(2);
+      calculateTotals();
+    };
+    
+    qtyInput.addEventListener('input', calcAmt);
+    priceInput.addEventListener('input', calcAmt);
+    
+    searchInput.addEventListener('input', function(e) {
+      const val = e.target.value.toLowerCase();
+      dropdown.innerHTML = '';
+      
+      if (!val) {
+        dropdown.classList.add('hidden');
+        return;
+      }
+      
+      const matches = itemsData.filter(i => i.name.toLowerCase().includes(val)).slice(0, 10);
+      
+      if (matches.length > 0) {
+        matches.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'dropdown-item';
+          div.innerHTML = `
+            <div style="font-weight: 600;">${item.name}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Stock: -- | Unit: ${item.unit} | Sale: ₹${item.sale_price}</div>
+          `;
+          div.addEventListener('click', () => {
+            searchInput.value = item.name;
+            codeInput.value = item.code;
+            unitInput.value = item.unit;
+            priceInput.value = item.sale_price || 0;
+            dropdown.classList.add('hidden');
+            calcAmt();
+          });
+          dropdown.appendChild(div);
+        });
+        dropdown.classList.remove('hidden');
+      } else {
+        dropdown.classList.add('hidden');
+      }
+    });
+    
+    document.addEventListener('click', function(e) {
+      if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+  }
+  
+  function calculateTotals() {
+    let sub = 0;
+    document.querySelectorAll('.item-amount').forEach(el => {
+      sub += parseFloat(el.value) || 0;
+    });
+    
+    document.getElementById('subTotal').innerText = sub.toFixed(2);
+    // Add mock tax logic if needed, for now just 0
+    let tax = 0;
+    document.getElementById('taxTotal').innerText = tax.toFixed(2);
+    currentGrandTotal = sub + tax;
+    document.getElementById('grandTotal').innerText = currentGrandTotal.toFixed(2);
+    
+    // Automatically re-calc bill summary
+    updateBillSummary();
+  }
+  
+  // Submit logic
+  document.getElementById('salesForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const saveBtn = document.getElementById('saveBtn');
+    
+    if(!document.getElementById('customerCode').value) {
+      alert("Please select a valid customer.");
+      return;
+    }
+    
+    // Gather item rows
+    const rows = [];
+    document.querySelectorAll('.item-row').forEach(tr => {
+      const code = tr.querySelector('.item-code').value;
+      const qty = parseFloat(tr.querySelector('.item-qty').value);
+      const price = parseFloat(tr.querySelector('.item-price').value);
+      const amount = parseFloat(tr.querySelector('.item-amount').value);
+      
+      if(code && qty > 0) {
+        rows.push({ code, qty, price, amount });
+      }
+    });
+    
+    if(rows.length === 0) {
+      alert("Please add at least one valid item row.");
+      return;
+    }
+
+    // Gather Bill Adjustments
+    const billAdjustments = [];
+    document.querySelectorAll('.bill-pay-amt').forEach(input => {
+        if (!input.disabled) {
+            const val = parseFloat(input.value) || 0;
+            if (val > 0) {
+                const idx = input.getAttribute('data-index');
+                const bill = currentBills[idx];
+                billAdjustments.push({
+                    ref_code: bill.ref_code,
+                    amount: val
+                });
+            }
+        }
+    });
+    
+    const payload = {
+      date: document.getElementById('date').value,
+      customer_code: document.getElementById('customerCode').value,
+      sale_type: document.getElementById('saleType').value,
+      narration: document.getElementById('narration').value,
+      items: rows,
+      bill_adjustments: billAdjustments,
+      total_amount: currentGrandTotal
+    };
+    
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner"></span> Saving...';
+    
+    try {
+      const res = await fetch('/api/sales/submit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      
+      if(data.success) {
+        alert("Sales Invoice Saved successfully! " + data.vch_no);
+        window.location.reload();
+      } else {
+        alert("Error: " + data.error);
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = 'Save Sales Invoice';
+      }
+    } catch(err) {
+      alert("Network Error!");
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = 'Save Sales Invoice';
+    }
+  });
+
+  // Init
+  loadData();
+</script>
+<style>
+  .search-input-wrapper {
+    position: relative;
+  }
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+  }
+  .search-input {
+    padding-left: 36px !important;
+  }
+  .dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    max-height: 250px;
+    overflow-y: auto;
+    margin-top: 4px;
+  }
+  .dropdown-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+  }
+  .dropdown-item:last-child {
+    border-bottom: none;
+  }
+  .dropdown-item:hover {
+    background: #f8fafc;
+  }
+  .hidden {
+    display: none;
+  }
+  .readonly-field {
+    border-color: transparent !important;
+    cursor: not-allowed;
+  }
+</style>
+{% endblock %}

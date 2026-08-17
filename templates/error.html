@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Error{% endblock %}
+{% block page_title %}Error{% endblock %}
+{% block content %}
+<div class="card error-card">
+  <div class="error-icon">⚠️</div>
+  <h2>Something went wrong</h2>
+  <pre class="error-detail">{{ error }}</pre>
+  <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+</div>
+{% endblock %}
+

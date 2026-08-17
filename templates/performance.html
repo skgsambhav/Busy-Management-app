@@ -1,0 +1,516 @@
+{% extends "base.html" %}
+
+{% block title %}Performance Analytics{% endblock %}
+{% block page_title %}Performance Analytics{% endblock %}
+{% block page_subtitle %}Visualizing sales, total credit collections, and total money inflows (CASH + BANKS + PYMT){% endblock %}
+
+{% block topbar_actions %}
+<div class="date-filter-bar" style="display: flex; gap: 10px; align-items: center; background: #ffffff; padding: 4px 10px; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+    <!-- Preset Pills -->
+    <div class="preset-pills" style="display: flex; gap: 3px;">
+        <button type="button" class="preset-btn" data-days="1" style="padding: 3px 8px; font-size: 11px; border-radius: 5px; border: none; background: transparent; color: var(--text-light); font-weight: 600; cursor: pointer; transition: all 0.2s;">1D</button>
+        <button type="button" class="preset-btn" data-days="7" style="padding: 3px 8px; font-size: 11px; border-radius: 5px; border: none; background: transparent; color: var(--text-light); font-weight: 600; cursor: pointer; transition: all 0.2s;">7D</button>
+        <button type="button" class="preset-btn" data-days="15" style="padding: 3px 8px; font-size: 11px; border-radius: 5px; border: none; background: transparent; color: var(--text-light); font-weight: 600; cursor: pointer; transition: all 0.2s;">15D</button>
+        <button type="button" class="preset-btn active" data-days="30" style="padding: 3px 8px; font-size: 11px; border-radius: 5px; border: none; background: var(--primary-color, #4f46e5); color: #ffffff; font-weight: 600; cursor: pointer; transition: all 0.2s;">30D</button>
+    </div>
+    
+    <div style="width: 1px; height: 18px; background: #e2e8f0;"></div>
+
+    <div style="display: flex; align-items: center; gap: 6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        <input type="date" id="fromDate" class="form-control" style="padding: 2px 4px; border: none; outline: none; font-size: 12px; font-weight: 500; color: #334155; background: transparent; cursor: pointer;">
+    </div>
+    <span style="color: #94a3b8; font-size: 11px;">to</span>
+    <div style="display: flex; align-items: center; gap: 6px;">
+        <input type="date" id="toDate" class="form-control" style="padding: 2px 4px; border: none; outline: none; font-size: 12px; font-weight: 500; color: #334155; background: transparent; cursor: pointer;">
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+.compact-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+@media (max-width: 900px) {
+    .compact-kpi-grid { grid-template-columns: 1fr; }
+}
+.kpi-compact-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 16px 18px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.kpi-compact-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.kpi-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+}
+.kpi-val {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-top: 4px;
+}
+.kpi-sub {
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+    margin-top: 4px;
+}
+.chart-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    margin-bottom: 24px;
+}
+</style>
+
+<!-- Top 3 Compact Summary KPI Cards -->
+<div class="compact-kpi-grid">
+    <!-- Total Sales Card -->
+    <div class="kpi-compact-card" style="border-left: 5px solid #10b981;">
+        <div>
+            <div class="kpi-label">Total Sales</div>
+            <div id="total-sales" class="kpi-val" style="color: #059669;">₹0.00</div>
+            <div id="sales-peak-sub" class="kpi-sub">Peak: ₹0 on -</div>
+        </div>
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(16, 185, 129, 0.1); color: #10b981; display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+        </div>
+    </div>
+
+    <!-- Total Credit (Receipts) Card -->
+    <div class="kpi-compact-card" style="border-left: 5px solid #8b5cf6;">
+        <div>
+            <div class="kpi-label">Total Credit (Receipts)</div>
+            <div id="total-receipts" class="kpi-val" style="color: #7c3aed;">₹0.00</div>
+            <div id="receipts-peak-sub" class="kpi-sub">Peak: ₹0 on -</div>
+        </div>
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(139, 92, 246, 0.12); color: #8b5cf6; display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+    </div>
+
+    <!-- Total Money Inflow (CASH + BANKS + PYMT) Card -->
+    <div class="kpi-compact-card" style="border-left: 5px solid #0284c7;">
+        <div>
+            <div class="kpi-label">Total Inflow (Cash + Banks + PYMT)</div>
+            <div id="total-inflow" class="kpi-val" style="color: #0284c7;">₹0.00</div>
+            <div id="inflow-peak-sub" class="kpi-sub">Peak: ₹0 on -</div>
+        </div>
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(2, 132, 199, 0.1); color: #0284c7; display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle></svg>
+        </div>
+    </div>
+</div>
+
+<!-- 3 Vertical Stacked Graphs (Ek ke niche ek) -->
+
+<!-- 1. Daily Sales Trend Chart -->
+<div class="chart-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                Daily Sales Performance
+            </h3>
+            <div id="sales-avg-text" style="font-size: 12px; color: #64748b; margin-top: 2px;">Avg: ₹0/day</div>
+        </div>
+
+        <div style="display: flex; gap: 2px; background: #f8fafc; padding: 3px; border-radius: 8px; border: 1px solid #e2e8f0;" id="sales-chart-toggle">
+            <button type="button" class="chart-toggle-btn active" data-type="line" style="border: none; background: #fff; padding: 3px 10px; font-size: 11px; font-weight: 600; color: #0f172a; border-radius: 6px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">📈 Line</button>
+            <button type="button" class="chart-toggle-btn" data-type="bar" style="border: none; background: transparent; padding: 3px 10px; font-size: 11px; font-weight: 600; color: #64748b; border-radius: 6px; cursor: pointer;">📊 Bar</button>
+        </div>
+    </div>
+    <div style="position: relative; height: 280px; width: 100%;">
+        <canvas id="salesChart"></canvas>
+    </div>
+</div>
+
+<!-- 2. Total Credit (Receipts) Trend Chart -->
+<div class="chart-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: #8b5cf6; display: inline-block;"></span>
+                Daily Total Credit (Receipts Collection)
+            </h3>
+            <div id="receipts-avg-text" style="font-size: 12px; color: #64748b; margin-top: 2px;">Avg: ₹0/day</div>
+        </div>
+
+        <div style="display: flex; gap: 2px; background: #f8fafc; padding: 3px; border-radius: 8px; border: 1px solid #e2e8f0;" id="receipts-chart-toggle">
+            <button type="button" class="chart-toggle-btn active" data-type="line" style="border: none; background: #fff; padding: 3px 10px; font-size: 11px; font-weight: 600; color: #0f172a; border-radius: 6px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">📈 Line</button>
+            <button type="button" class="chart-toggle-btn" data-type="bar" style="border: none; background: transparent; padding: 3px 10px; font-size: 11px; font-weight: 600; color: #64748b; border-radius: 6px; cursor: pointer;">📊 Bar</button>
+        </div>
+    </div>
+    <div style="position: relative; height: 280px; width: 100%;">
+        <canvas id="receiptsChart"></canvas>
+    </div>
+</div>
+
+<!-- 3. Total Money Inflow (CASH + BANKS + PYMT) Chart -->
+<div class="chart-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: #0284c7; display: inline-block;"></span>
+                Daily Total Money Inflow (CASH + BANKS + PYMT)
+            </h3>
+            <div id="inflow-avg-text" style="font-size: 12px; color: #64748b; margin-top: 2px;">Avg: ₹0/day</div>
+        </div>
+
+        <div style="display: flex; gap: 2px; background: #f8fafc; padding: 3px; border-radius: 8px; border: 1px solid #e2e8f0;" id="inflow-chart-toggle">
+            <button type="button" class="chart-toggle-btn active" data-type="line" style="border: none; background: #fff; padding: 3px 10px; font-size: 11px; font-weight: 600; color: #0f172a; border-radius: 6px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">📈 Line</button>
+            <button type="button" class="chart-toggle-btn" data-type="bar" style="border: none; background: transparent; padding: 3px 10px; font-size: 11px; font-weight: 600; color: #64748b; border-radius: 6px; cursor: pointer;">📊 Bar</button>
+        </div>
+    </div>
+    <div style="position: relative; height: 280px; width: 100%;">
+        <canvas id="inflowChart"></canvas>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let rawDataCache = null;
+let salesChart, receiptsChart, inflowChart;
+let currentSalesType = 'line';
+let currentReceiptsType = 'line';
+let currentInflowType = 'line';
+
+document.addEventListener("DOMContentLoaded", function() {
+    const formatDateInput = (d) => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    document.getElementById("fromDate").value = formatDateInput(thirtyDaysAgo);
+    document.getElementById("toDate").value = formatDateInput(today);
+
+    // Preset Buttons
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.preset-btn').forEach(b => {
+                b.classList.remove('active');
+                b.style.background = 'transparent';
+                b.style.color = 'var(--text-light)';
+            });
+            this.classList.add('active');
+            this.style.background = 'var(--primary-color, #4f46e5)';
+            this.style.color = '#ffffff';
+
+            const days = parseInt(this.getAttribute('data-days'));
+            const end = new Date();
+            const start = new Date(end);
+            if (days > 1) {
+                start.setDate(end.getDate() - days);
+            }
+
+            document.getElementById("fromDate").value = formatDateInput(start);
+            document.getElementById("toDate").value = formatDateInput(end);
+            loadData();
+        });
+    });
+
+    const createChartOptions = () => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 500, easing: 'easeOutQuart' },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                titleFont: { size: 12, weight: '600', family: 'Inter' },
+                bodyFont: { size: 13, weight: '700', family: 'Inter' },
+                padding: 10,
+                cornerRadius: 8,
+                callbacks: {
+                    label: function(context) {
+                        return 'Amount: ' + new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(context.parsed.y);
+                    }
+                }
+            }
+        },
+        scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 11, family: 'Inter' }, color: '#64748b' } },
+            y: {
+                beginAtZero: true,
+                border: { display: false },
+                grid: { color: 'rgba(226, 232, 240, 0.6)' },
+                ticks: {
+                    font: { size: 11, family: 'Inter' },
+                    color: '#64748b',
+                    callback: function(val) {
+                        if (val >= 100000) return '₹' + (val/100000).toFixed(1) + 'L';
+                        if (val >= 1000) return '₹' + (val/1000).toFixed(0) + 'k';
+                        return '₹' + val;
+                    }
+                }
+            }
+        }
+    });
+
+    // 1. Sales Chart
+    const ctxSales = document.getElementById('salesChart').getContext('2d');
+    const gradSales = ctxSales.createLinearGradient(0, 0, 0, 280);
+    gradSales.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+    gradSales.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+    salesChart = new Chart(ctxSales, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Sales',
+                data: [],
+                borderColor: '#10b981',
+                backgroundColor: gradSales,
+                borderWidth: 2.5,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#10b981',
+                fill: true,
+                tension: 0.35
+            }]
+        },
+        options: createChartOptions()
+    });
+
+    // 2. Receipts / Total Credit Chart
+    const ctxReceipts = document.getElementById('receiptsChart').getContext('2d');
+    const gradReceipts = ctxReceipts.createLinearGradient(0, 0, 0, 280);
+    gradReceipts.addColorStop(0, 'rgba(139, 92, 246, 0.35)');
+    gradReceipts.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
+
+    receiptsChart = new Chart(ctxReceipts, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Total Credit',
+                data: [],
+                borderColor: '#8b5cf6',
+                backgroundColor: gradReceipts,
+                borderWidth: 2.5,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#8b5cf6',
+                fill: true,
+                tension: 0.35
+            }]
+        },
+        options: createChartOptions()
+    });
+
+    // 3. Money Inflow (CASH + BANKS + PYMT) Chart
+    const ctxInflow = document.getElementById('inflowChart').getContext('2d');
+    const gradInflow = ctxInflow.createLinearGradient(0, 0, 0, 280);
+    gradInflow.addColorStop(0, 'rgba(2, 132, 199, 0.35)');
+    gradInflow.addColorStop(1, 'rgba(2, 132, 199, 0.0)');
+
+    inflowChart = new Chart(ctxInflow, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Total Inflow',
+                data: [],
+                borderColor: '#0284c7',
+                backgroundColor: gradInflow,
+                borderWidth: 2.5,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#0284c7',
+                fill: true,
+                tension: 0.35
+            }]
+        },
+        options: createChartOptions()
+    });
+
+    // Toggle Handlers
+    document.querySelectorAll('#sales-chart-toggle .chart-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('#sales-chart-toggle .chart-toggle-btn').forEach(b => {
+                b.style.background = 'transparent';
+                b.style.color = '#64748b';
+                b.style.boxShadow = 'none';
+            });
+            this.style.background = '#fff';
+            this.style.color = '#0f172a';
+            this.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+            currentSalesType = this.getAttribute('data-type');
+            if (rawDataCache) renderCharts(rawDataCache);
+        });
+    });
+
+    document.querySelectorAll('#receipts-chart-toggle .chart-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('#receipts-chart-toggle .chart-toggle-btn').forEach(b => {
+                b.style.background = 'transparent';
+                b.style.color = '#64748b';
+                b.style.boxShadow = 'none';
+            });
+            this.style.background = '#fff';
+            this.style.color = '#0f172a';
+            this.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+            currentReceiptsType = this.getAttribute('data-type');
+            if (rawDataCache) renderCharts(rawDataCache);
+        });
+    });
+
+    document.querySelectorAll('#inflow-chart-toggle .chart-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('#inflow-chart-toggle .chart-toggle-btn').forEach(b => {
+                b.style.background = 'transparent';
+                b.style.color = '#64748b';
+                b.style.boxShadow = 'none';
+            });
+            this.style.background = '#fff';
+            this.style.color = '#0f172a';
+            this.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+            currentInflowType = this.getAttribute('data-type');
+            if (rawDataCache) renderCharts(rawDataCache);
+        });
+    });
+
+    function loadData() {
+        const fromDate = document.getElementById("fromDate").value;
+        const toDate = document.getElementById("toDate").value;
+        
+        let url = '/api/performance?';
+        if (fromDate) url += `from_date=${fromDate}&`;
+        if (toDate) url += `to_date=${toDate}`;
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    if (window.showToast) showToast(data.error, "error");
+                    return;
+                }
+                rawDataCache = data;
+                renderCharts(data);
+            })
+            .catch(err => {
+                console.error(err);
+                if (window.showToast) showToast("Failed to load performance analytics", "error");
+            });
+    }
+
+    function renderCharts(data) {
+        const formatMoney = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(val);
+
+        const totalInflowVal = data.total_inflow || (data.total_receipts + (data.total_payments || 0));
+
+        // Populate KPI Cards
+        document.getElementById("total-sales").textContent = formatMoney(data.total_sales);
+        document.getElementById("total-receipts").textContent = formatMoney(data.total_receipts);
+        document.getElementById("total-inflow").textContent = formatMoney(totalInflowVal);
+
+        const activeDaysCount = data.timeline ? data.timeline.length : 0;
+        const avgSales = activeDaysCount > 0 ? (data.total_sales / activeDaysCount) : 0;
+        const avgReceipts = activeDaysCount > 0 ? (data.total_receipts / activeDaysCount) : 0;
+        const avgInflow = activeDaysCount > 0 ? (totalInflowVal / activeDaysCount) : 0;
+
+        document.getElementById("sales-avg-text").textContent = `Average: ${formatMoney(avgSales)}/day (${activeDaysCount} active days)`;
+        document.getElementById("receipts-avg-text").textContent = `Average: ${formatMoney(avgReceipts)}/day (${activeDaysCount} active days)`;
+        document.getElementById("inflow-avg-text").textContent = `Average: ${formatMoney(avgInflow)}/day (${activeDaysCount} active days)`;
+
+        let maxSale = 0, maxSaleDate = '-';
+        let maxRect = 0, maxRectDate = '-';
+        let maxInflow = 0, maxInflowDate = '-';
+
+        const labels = [];
+        const sData = [];
+        const rData = [];
+        const iData = [];
+
+        data.timeline.forEach(day => {
+            labels.push(day.display_date.substring(0, 5));
+            sData.push(day.sales);
+            rData.push(day.receipts);
+            
+            const infVal = day.inflow || (day.receipts + (day.payments || 0));
+            iData.push(infVal);
+
+            if (day.sales > maxSale) { maxSale = day.sales; maxSaleDate = day.display_date; }
+            if (day.receipts > maxRect) { maxRect = day.receipts; maxRectDate = day.display_date; }
+            if (infVal > maxInflow) { maxInflow = infVal; maxInflowDate = day.display_date; }
+        });
+
+        document.getElementById("sales-peak-sub").textContent = maxSale > 0 ? `Peak: ${formatMoney(maxSale)} on ${maxSaleDate}` : 'No sales';
+        document.getElementById("receipts-peak-sub").textContent = maxRect > 0 ? `Peak: ${formatMoney(maxRect)} on ${maxRectDate}` : 'No receipts';
+        document.getElementById("inflow-peak-sub").textContent = maxInflow > 0 ? `Peak: ${formatMoney(maxInflow)} on ${maxInflowDate}` : 'No inflow';
+
+        // 1. Sales Update
+        salesChart.config.type = currentSalesType;
+        salesChart.data.labels = labels;
+        salesChart.data.datasets[0].data = sData;
+        salesChart.data.datasets[0].backgroundColor = currentSalesType === 'bar' ? '#10b981' : gradSales;
+        salesChart.data.datasets[0].borderRadius = currentSalesType === 'bar' ? 4 : 0;
+        salesChart.update();
+
+        // 2. Receipts Update
+        receiptsChart.config.type = currentReceiptsType;
+        receiptsChart.data.labels = labels;
+        receiptsChart.data.datasets[0].data = rData;
+        receiptsChart.data.datasets[0].backgroundColor = currentReceiptsType === 'bar' ? '#8b5cf6' : gradReceipts;
+        receiptsChart.data.datasets[0].borderRadius = currentReceiptsType === 'bar' ? 4 : 0;
+        receiptsChart.update();
+
+        // 3. Inflow Update
+        inflowChart.config.type = currentInflowType;
+        inflowChart.data.labels = labels;
+        inflowChart.data.datasets[0].data = iData;
+        inflowChart.data.datasets[0].backgroundColor = currentInflowType === 'bar' ? '#0284c7' : gradInflow;
+        inflowChart.data.datasets[0].borderRadius = currentInflowType === 'bar' ? 4 : 0;
+        inflowChart.update();
+    }
+
+    document.getElementById("fromDate").addEventListener("change", function() {
+        document.querySelectorAll('.preset-btn').forEach(b => {
+            b.classList.remove('active');
+            b.style.background = 'transparent';
+            b.style.color = 'var(--text-light)';
+        });
+        loadData();
+    });
+
+    document.getElementById("toDate").addEventListener("change", function() {
+        document.querySelectorAll('.preset-btn').forEach(b => {
+            b.classList.remove('active');
+            b.style.background = 'transparent';
+            b.style.color = 'var(--text-light)';
+        });
+        loadData();
+    });
+
+    loadData();
+});
+</script>
+{% endblock %}

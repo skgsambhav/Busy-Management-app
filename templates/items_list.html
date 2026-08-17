@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+
+{% block title %}Item Master{% endblock %}
+{% block page_title %}Item Master Management{% endblock %}
+{% block page_subtitle %}Manage inventory items, sale prices, and Hindi (Second Language) names{% endblock %}
+
+{% block content %}
+<div class="card" style="border-radius: 14px; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow: hidden;">
+    <div class="card-header" style="gap: 12px; padding: 12px 18px; background: rgba(0,0,0,0.015); border-bottom: 1px solid var(--border-color); flex-wrap: wrap;">
+        <div class="search-input-wrapper" style="flex: 1; display: flex; gap: 10px; min-width: 300px;">
+            <div style="flex: 1; position: relative;">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-light);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="searchInput" class="form-control search-input" placeholder="Search items by name or brand..." style="padding-left: 36px; width: 100%; height: 38px; border-radius: 20px; font-size: 13px;">
+            </div>
+            <select id="groupFilter" class="form-control" style="width: 180px; height: 38px; padding: 6px 12px; border-radius: 8px; font-size: 13px;">
+                <option value="">All Groups</option>
+            </select>
+        </div>
+        <button id="btnAiTranslate" class="btn btn-primary" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border: none; padding: 7px 16px; font-size: 13px; font-weight: 700; box-shadow: 0 3px 10px rgba(99,102,241,0.25);">
+            ✨ AI Translate Missing
+        </button>
+        <span id="itemCountBadge" class="badge badge-indigo" style="font-size: 12px; padding: 6px 12px; border-radius: 8px;">Loading...</span>
+    </div>
+    
+    <div id="loading" style="text-align: center; padding: 50px; color: var(--text-light); font-size: 14px; font-weight: 500;">
+        Loading items from Busy database...
+    </div>
+    
+<style>
+.compact-items-table {
+    width: 100%;
+    font-size: 13px;
+    border-collapse: collapse;
+}
+.compact-items-table th {
+    padding: 8px 12px !important;
+    font-size: 11px !important;
+    font-weight: 700;
+    white-space: nowrap;
+    background: rgba(0,0,0,0.02);
+    color: var(--text-light);
+    border-bottom: 2px solid var(--border-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.compact-items-table td {
+    padding: 8px 12px !important;
+    vertical-align: middle;
+    font-size: 13px !important;
+    border-bottom: 1px solid var(--border-light);
+}
+.compact-items-table tbody tr:hover td {
+    background-color: rgba(99, 102, 241, 0.03);
+}
+.info-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(2, 132, 199, 0.12);
+    color: #0284c7;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+.info-btn:hover {
+    background: #0284c7;
+    color: #ffffff;
+    transform: scale(1.15);
+}
+.table-responsive {
+    overflow-x: auto;
+    width: 100%;
+}
+</style>
+
+    <div class="table-responsive">
+        <table class="data-table compact-items-table" id="itemsTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th style="text-align: left; max-width: 240px;">ITEM NAME</th>
+                    <th style="text-align: left;">GROUP</th>
+                    <th style="text-align: center;">UNIT</th>
+                    <th style="text-align: right;">MRP</th>
+                    <th style="text-align: right;">PP (₹)</th>
+                    <th style="text-align: right;">SP (₹)</th>
+                    <th style="text-align: right;">SP(A)</th>
+                    <th style="text-align: right;">SP(B)</th>
+                    <th style="text-align: right;">SP(C)</th>
+                    <th style="text-align: left;">DESC</th>
+                    <th style="text-align: center;" width="60">ACTION</th>
+                </tr>
+            </thead>
+            <tbody id="itemsBody">
+                <!-- Populated by JS -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="modalOverlay" class="modal-overlay" style="display: none;" onclick="closeModal()"></div>
+<div class="modal" id="editModal" style="display: none; width: 440px; padding: 24px; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+        <h3 id="modalTitle" style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0;">Edit Item</h3>
+        <button class="btn btn-ghost" onclick="closeModal()" style="padding: 4px 8px;">✕</button>
+    </div>
+    <form id="editForm">
+        <input type="hidden" id="editItemCode">
+        
+        <div class="form-group">
+            <label class="form-label">Sale Price (Main)</label>
+            <div class="amount-input-wrapper">
+                <span class="currency-symbol">₹</span>
+                <input type="number" step="0.01" id="editSalePrice" class="form-control amount-input" required style="color: var(--accent-emerald) !important;">
+            </div>
+        </div>
+        
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <div class="form-group">
+                <label class="form-label">Purchase Price</label>
+                <input type="number" step="0.01" id="editPurcPrice" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">MRP</label>
+                <input type="number" step="0.01" id="editMrp" class="form-control" required>
+            </div>
+        </div>
+
+        <!-- Sale Price Levels -->
+        <div style="margin-bottom: 16px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);">
+            <label style="display: block; font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">Sales Price Levels (A, B, C)</label>
+            <div class="form-group" style="margin-bottom: 8px;">
+                <label class="form-label" style="font-size: 12px;">Sale Price (A)</label>
+                <input type="number" step="0.01" id="editPriceA" class="form-control" style="height: 38px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 8px;">
+                <label class="form-label" style="font-size: 12px;">Sale Price (B)</label>
+                <input type="number" step="0.01" id="editPriceB" class="form-control" style="height: 38px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-size: 12px;">Sale Price (C)</label>
+                <input type="number" step="0.01" id="editPriceC" class="form-control" style="height: 38px;">
+            </div>
+        </div>
+        
+        <!-- Second Language (Hindi) -->
+        <div style="margin-bottom: 20px; padding: 16px; background: var(--accent-amber-light); border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3);">
+            <label style="display: block; font-size: 11px; color: var(--accent-amber); font-weight: 700; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Second Language (Hindi Name)</label>
+            <div class="form-group" style="margin-bottom: 0;">
+                <input type="text" id="editNameSL" class="form-control" placeholder="Hindi name alias..." style="background: #ffffff;">
+            </div>
+        </div>
+
+        <!-- Item Description -->
+        <div style="margin-bottom: 20px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);">
+            <label style="display: block; font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">Item Description</label>
+            <div class="form-group" style="margin-bottom: 8px;">
+                <input type="text" id="editDesc1" class="form-control" placeholder="Description line 1..." style="height: 38px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 8px;">
+                <input type="text" id="editDesc2" class="form-control" placeholder="Description line 2..." style="height: 38px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 8px;">
+                <input type="text" id="editDesc3" class="form-control" placeholder="Description line 3..." style="height: 38px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <input type="text" id="editDesc4" class="form-control" placeholder="Description line 4..." style="height: 38px;">
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="saveBtn" style="width: 100%;">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Description Modal Popup -->
+<div class="modal" id="descModal" style="display: none; width: 380px; padding: 20px; border-radius: 12px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; background: white; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="background: #e0f2fe; color: #0284c7; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">ℹ</span>
+            <h4 id="descModalItemName" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary);">Item Description</h4>
+        </div>
+        <button class="btn btn-ghost" onclick="closeDescModal()" style="padding: 2px 6px;">✕</button>
+    </div>
+    <div id="descModalBody" style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; max-height: 250px; overflow-y: auto; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border);"></div>
+    <div style="margin-top: 14px; text-align: right;">
+        <button class="btn btn-secondary" onclick="closeDescModal()" style="padding: 6px 14px; font-size: 12px;">Close</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allItems = [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchItems();
+        
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            renderItems();
+        });
+
+        document.getElementById('groupFilter').addEventListener('change', (e) => {
+            renderItems();
+        });
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await saveItem();
+        });
+    });
+
+    async function fetchItems() {
+        try {
+            const response = await fetch('/api/items');
+            allItems = await response.json();
+            
+            const groups = [...new Set(allItems.map(i => i.group).filter(Boolean))].sort();
+            const groupSelect = document.getElementById('groupFilter');
+            groups.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g;
+                opt.textContent = g;
+                groupSelect.appendChild(opt);
+            });
+            
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('itemsTable').style.display = 'table';
+            renderItems();
+        } catch (error) {
+            document.getElementById('loading').innerHTML = '<span style="color: var(--accent-rose);">Failed to load items. Please try again.</span>';
+        }
+    }
+
+    function formatMoney(amount) {
+        return parseFloat(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function getMarginHtml(sp, pp) {
+        if (!pp || pp <= 0 || !sp || sp <= 0) return '';
+        const margin = ((sp - pp) / pp) * 100;
+        const isUp = margin >= 0;
+        const arrow = isUp ? '↑' : '↓';
+        const color = isUp ? '#059669' : '#dc2626'; 
+        const formatted = margin % 1 === 0 ? margin.toFixed(0) : margin.toFixed(1);
+        const sign = isUp ? '+' : '';
+        return `<div style="font-size: 10px; color: ${color}; font-weight: 700; line-height: 1; margin-top: 2px; white-space: nowrap;">${sign}${formatted}% ${arrow}</div>`;
+    }
+
+    function renderItems() {
+        const filterText = document.getElementById('searchInput').value.toLowerCase();
+        const groupFilterValue = document.getElementById('groupFilter').value;
+        const tbody = document.getElementById('itemsBody');
+        tbody.innerHTML = '';
+        
+        const filtered = allItems.filter(item => {
+            const matchesText = item.name.toLowerCase().includes(filterText) ||
+                                (item.name_sl && item.name_sl.toLowerCase().includes(filterText));
+            const matchesGroup = groupFilterValue ? item.group === groupFilterValue : true;
+            return matchesText && matchesGroup;
+        });
+
+        document.getElementById('itemCountBadge').textContent = `${filtered.length} Items`;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; padding: 40px; color: var(--text-muted);">No matching items found</td></tr>';
+            return;
+        }
+
+        filtered.forEach((item, idx) => {
+            const tr = document.createElement('tr');
+            const descParts = [item.desc1, item.desc2, item.desc3, item.desc4].filter(Boolean);
+            const globalIdx = allItems.indexOf(item);
+            const descIconHtml = descParts.length > 0 
+                ? `<span class="info-btn" onclick="showDescModal(${globalIdx})" title="Click to view description">ℹ</span>`
+                : '<span style="color:#cbd5e1;">—</span>';
+            tr.innerHTML = `
+                <td style="max-width: 240px;" title="${item.name}${item.name_sl ? ' / ' + item.name_sl : ''}">
+                    <div style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px;">${item.name}</div>
+                    ${item.name_sl ? `<div style="font-size: 12px; color: var(--accent-amber); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name_sl}</div>` : ''}
+                </td>
+                <td style="max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.group || ''}">
+                    <span style="font-size: 13px; color: var(--text-secondary);">${item.group || '—'}</span>
+                </td>
+                <td style="text-align: center; white-space: nowrap;"><span class="badge badge-sky" style="font-weight: 600; font-size: 11px; padding: 3px 8px;">${item.unit || '—'}</span></td>
+                <td style="text-align: right; font-weight: 500; color: var(--text-muted); white-space: nowrap; font-size: 13px;">₹${formatMoney(item.mrp)}</td>
+                <td style="text-align: right; font-weight: 500; color: var(--text-muted); white-space: nowrap; font-size: 13px;">₹${formatMoney(item.purc_price)}</td>
+                <td style="text-align: right; font-weight: 700; color: var(--accent-emerald); font-size: 15px; white-space: nowrap;">
+                    ₹${formatMoney(item.sale_price)}
+                    ${getMarginHtml(item.sale_price, item.purc_price)}
+                </td>
+                <td style="text-align: right; font-size: 13px; color: var(--text-secondary); white-space: nowrap;">
+                    ₹${formatMoney(item.price_a)}
+                    ${getMarginHtml(item.price_a, item.purc_price)}
+                </td>
+                <td style="text-align: right; font-size: 13px; color: var(--text-secondary); white-space: nowrap;">
+                    ₹${formatMoney(item.price_b)}
+                    ${getMarginHtml(item.price_b, item.purc_price)}
+                </td>
+                <td style="text-align: right; font-size: 13px; color: var(--text-secondary); white-space: nowrap;">
+                    ₹${formatMoney(item.price_c)}
+                    ${getMarginHtml(item.price_c, item.purc_price)}
+                </td>
+                <td style="text-align: center; white-space: nowrap; width: 40px;">
+                    ${descIconHtml}
+                </td>
+                <td style="text-align: center; white-space: nowrap; width: 60px;">
+                    <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;" data-item-idx="${allItems.indexOf(item)}" onclick="openModalByIdx(this)">
+                        Edit
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function openModalByIdx(btn) {
+        const idx = parseInt(btn.getAttribute('data-item-idx'));
+        openModal(allItems[idx]);
+    }
+
+    function openModal(item) {
+        document.getElementById('editItemCode').value = item.code;
+        document.getElementById('modalTitle').textContent = `Edit: ${item.name}`;
+        document.getElementById('editSalePrice').value = item.sale_price || 0;
+        document.getElementById('editPurcPrice').value = item.purc_price || 0;
+        let mrpVal = item.mrp || 0;
+        if (!mrpVal && item.name) {
+            const match = item.name.match(/(\d+(?:\.\d+)?)\s*\/-\s*/);
+            if (match) {
+                mrpVal = parseFloat(match[1]);
+            }
+        }
+        document.getElementById('editMrp').value = mrpVal;
+        document.getElementById('editPriceA').value = item.price_a || 0;
+        document.getElementById('editPriceB').value = item.price_b || 0;
+        document.getElementById('editPriceC').value = item.price_c || 0;
+        document.getElementById('editNameSL').value = item.name_sl || '';
+        document.getElementById('editDesc1').value = item.desc1 || '';
+        document.getElementById('editDesc2').value = item.desc2 || '';
+        document.getElementById('editDesc3').value = item.desc3 || '';
+        document.getElementById('editDesc4').value = item.desc4 || '';
+
+        document.getElementById('editModal').style.display = 'block';
+        document.getElementById('modalOverlay').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('editModal').style.display = 'none';
+        document.getElementById('descModal').style.display = 'none';
+        document.getElementById('modalOverlay').style.display = 'none';
+    }
+
+    function showDescModal(itemIdx) {
+        const item = allItems[itemIdx];
+        if (!item) return;
+        const descParts = [item.desc1, item.desc2, item.desc3, item.desc4].filter(Boolean);
+        if (descParts.length === 0) return;
+        
+        document.getElementById('descModalItemName').textContent = item.name;
+        document.getElementById('descModalBody').innerHTML = descParts.map(d => `<div style="margin-bottom: 6px; display: flex; align-items: flex-start; gap: 8px;"><span style="color: #6366f1; font-weight: bold;">•</span> <span>${d}</span></div>`).join('');
+        document.getElementById('descModal').style.display = 'block';
+        document.getElementById('modalOverlay').style.display = 'block';
+    }
+
+    function closeDescModal() {
+        document.getElementById('descModal').style.display = 'none';
+        document.getElementById('modalOverlay').style.display = 'none';
+    }
+
+    async function saveItem() {
+        const itemCode = document.getElementById('editItemCode').value;
+        const salePrice = document.getElementById('editSalePrice').value;
+        const purcPrice = document.getElementById('editPurcPrice').value;
+        const mrp = document.getElementById('editMrp').value;
+        const priceA = document.getElementById('editPriceA').value;
+        const priceB = document.getElementById('editPriceB').value;
+        const priceC = document.getElementById('editPriceC').value;
+        const nameSL = document.getElementById('editNameSL').value;
+        const desc1 = document.getElementById('editDesc1').value;
+        const desc2 = document.getElementById('editDesc2').value;
+        const desc3 = document.getElementById('editDesc3').value;
+        const desc4 = document.getElementById('editDesc4').value;
+
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+
+        try {
+            const response = await fetch('/api/update_item', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    item_code: itemCode,
+                    sale_price: salePrice,
+                    purc_price: purcPrice,
+                    mrp: mrp,
+                    price_a: priceA,
+                    price_b: priceB,
+                    price_c: priceC,
+                    name_sl: nameSL,
+                    desc1: desc1,
+                    desc2: desc2,
+                    desc3: desc3,
+                    desc4: desc4
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const item = allItems.find(i => i.code == itemCode);
+                if (item) {
+                    item.sale_price = parseFloat(salePrice);
+                    item.purc_price = parseFloat(purcPrice);
+                    item.mrp = parseFloat(mrp);
+                    item.price_a = parseFloat(priceA);
+                    item.price_b = parseFloat(priceB);
+                    item.price_c = parseFloat(priceC);
+                    item.name_sl = nameSL;
+                    item.desc1 = desc1;
+                    item.desc2 = desc2;
+                    item.desc3 = desc3;
+                    item.desc4 = desc4;
+                }
+                renderItems();
+                closeModal();
+                showToast("Item updated successfully!", "success");
+            } else {
+                showToast("Failed to update item: " + (result.error || "Unknown error"), "error");
+            }
+        } catch (error) {
+            showToast("Error connecting to server", "error");
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save Changes';
+        }
+    }
+    async function startAiTranslation() {
+        const btn = document.getElementById('btnAiTranslate');
+        btn.disabled = true;
+        btn.innerHTML = `<span class="loading-spinner" style="width: 14px; height: 14px; display: inline-block; border-color: rgba(255,255,255,0.3); border-top-color: white; margin-right: 8px;"></span> Translating...`;
+        
+        try {
+            const response = await fetch('/api/translate_missing_hindi', { method: 'POST' });
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast(`Successfully translated ${result.updated} items!`, "success");
+                loadItems(); // Reload the table
+            } else {
+                showToast("Translation failed: " + (result.error || "Unknown error"), "error");
+            }
+        } catch (error) {
+            showToast("Error connecting to server", "error");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `✨ AI Translate Missing`;
+        }
+    }
+
+    document.getElementById('btnAiTranslate').addEventListener('click', startAiTranslation);
+</script>
+{% endblock %}
+

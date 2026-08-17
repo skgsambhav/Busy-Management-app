@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Dispatch Receipt</title>
+    <style>
+        @page { margin: 0; }
+        body {
+            margin: 0;
+            padding: 40px 20px 20px 20px; /* Top margin 40px */
+            font-family: 'Arial', sans-serif;
+            background: #fff;
+            color: #000;
+        }
+        .receipt-container {
+            max-width: 400px; /* Widened slightly */
+            margin: 0 auto; /* Center */
+            position: relative;
+            left: -30px; /* Shift left from center */
+            text-align: left;
+        }
+        .receipt-item {
+            text-align: left;
+            margin-bottom: 12px; /* More spacing */
+            font-size: 20px; /* Larger base font */
+            font-weight: bold; /* Bold text everywhere */
+            line-height: 1.5;
+        }
+        .bold-val {
+            font-weight: 900; /* Extra bold */
+            font-size: 24px; /* Larger value font */
+            display: inline-block;
+            margin-left: 8px;
+        }
+        .divider {
+            border-top: 2px dashed #000; /* Thicker dashed line */
+            margin: 20px 0;
+        }
+        .sender-info {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: left;
+            line-height: 1.5;
+        }
+        @media print {
+            body { padding: 40px 20px 20px 40px; } /* Preserve margin on print */
+        }
+    </style>
+</head>
+<body onload="window.print()">
+    <div class="receipt-container">
+        <div class="receipt-item">
+            <strong>प्राप्तकर्ता :</strong> <span class="bold-val">{{ dispatch.hindi_name or dispatch.account_name }}</span>
+        </div>
+        <div class="receipt-item">
+            <strong>कुल पार्सल :</strong> <span class="bold-val">{{ dispatch.total_parcel }}</span>
+        </div>
+        <div class="receipt-item">
+            <strong>मोबाइल नं. :</strong> <span class="bold-val">{{ dispatch.mobile or '—' }}</span>
+        </div>
+        <div class="receipt-item">
+            <strong>ट्रांसपोर्टर :</strong> <span class="bold-val">{{ dispatch.transporter }}</span>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="sender-info">
+            <strong>भेजने वाला :</strong><br>
+            गोपाल मार्केटिंग, ग्रीन पार्क कॉलोनी,<br>
+            भारतमाता चौक के पास, अम्बिकापुर<br>
+            <strong>मोब:</strong> 9406040611, 9977414177
+        </div>
+    </div>
+</body>
+</html>
