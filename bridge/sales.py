@@ -625,3 +625,131 @@ def create_sales_voucher(date_str, customer_code, items, total_amount, narration
         return {"success": True, "vch_code": saved_vch_code, "vch_no": next_vch_no_str}
     
     return {"success": False, "error": err_msg}
+
+
+def find_voucher(vch_no=None, phone=None, date_str=None, hint=None):
+    """
+    Search for any voucher (Sales=9, Receipt=14, Payment=15, etc.) in Tran1.
+    hint can be 'receipt', 'sale', 'payment' or None.
+    Returns {"vcode": vcode, "vtype": vtype, "vno": vno} or None.
+    """
+    vcode = None
+    vtype = None
+    vno_found = ""
+
+    # 1. Search by VchNo across Tran1
+    if vch_no:
+        clean_vno = str(vch_no).strip()
+        # Direct exact match
+        sql = f"SELECT TOP 1 VchCode, VchType, VchNo, Date, VchAmtBaseCur FROM Tran1 WHERE VchNo = '{clean_vno}' ORDER BY VchCode DESC"
+        rst = _get_rs(sql)
+        if not rst.EOF:
+            vcode = int(rst.Fields("VchCode").Value)
+            vtype = int(rst.Fields("VchType").Value)
+            vno_found = str(rst.Fields("VchNo").Value or "").strip()
+        rst.Close()
+        
+        # If not found, try LIKE match (e.g. if vch_no is "123" and stored as "GM123" or "GMRCPT123")
+        if not vcode and len(clean_vno) >= 2:
+            sql = f"SELECT TOP 1 VchCode, VchType, VchNo, Date, VchAmtBaseCur FROM Tran1 WHERE (VchNo LIKE '%{clean_vno}%' OR VchNo LIKE '%{clean_vno}') ORDER BY VchCode DESC"
+            rst = _get_rs(sql)
+            if not rst.EOF:
+                vcode = int(rst.Fields("VchCode").Value)
+                vtype = int(rst.Fields("VchType").Value)
+                vno_found = str(rst.Fields("VchNo").Value or "").strip()
+            rst.Close()
+
+    # 2. Search by Phone Number if not found by VchNo
+    if not vcode and phone:
+        digits = ''.join(c for c in str(phone) if c.isdigit())
+        if len(digits) >= 10:
+            last10 = digits[-10:]
+            sql_party = f"""
+                SELECT TOP 1 m.Code FROM Master1 m 
+                INNER JOIN MasterAddressInfo mai ON m.Code = mai.MasterCode 
+                WHERE mai.Mobile LIKE '%{last10}%' AND m.MasterType = 2
+            """
+            pcode = None
+            try:
+                rst_p = _get_rs(sql_party)
+                if not rst_p.EOF:
+                    pcode = int(rst_p.Fields("Code").Value)
+                rst_p.Close()
+            except:
+                pass
+            
+            if pcode:
+                type_filter = ""
+                if hint == "receipt":
+                    type_filter = "AND VchType = 14"
+                elif hint == "sale":
+                    type_filter = "AND VchType = 9"
+                elif hint == "payment":
+                    type_filter = "AND VchType = 15"
+                    
+                sql_v = f"SELECT TOP 1 VchCode, VchType, VchNo FROM Tran1 WHERE MasterCode1 = {pcode} {type_filter} ORDER BY VchCode DESC"
+                try:
+                    rst_v = _get_rs(sql_v)
+                    if not rst_v.EOF:
+                        vcode = int(rst_v.Fields("VchCode").Value)
+                        vtype = int(rst_v.Fields("VchType").Value)
+                        vno_found = str(rst_v.Fields("VchNo").Value or "").strip()
+                    rst_v.Close()
+                except:
+                    pass
+
+            # Check BillingDet if still not found
+            if not vcode:
+                type_filter = ""
+                if hint == "receipt":
+                    type_filter = "AND t1.VchType = 14"
+                elif hint == "sale":
+                    type_filter = "AND t1.VchType = 9"
+                    
+                sql_bd = f"""
+                    SELECT TOP 1 t1.VchCode, t1.VchType, t1.VchNo FROM Tran1 t1 
+                    INNER JOIN BillingDet bd ON t1.VchCode = bd.VchCode 
+                    WHERE bd.MobileNo LIKE '%{last10}%' {type_filter} 
+                    ORDER BY t1.VchCode DESC
+                """
+                try:
+                    rst_bd = _get_rs(sql_bd)
+                    if not rst_bd.EOF:
+                        vcode = int(rst_bd.Fields("VchCode").Value)
+                        vtype = int(rst_bd.Fields("VchType").Value)
+                        vno_found = str(rst_bd.Fields("VchNo").Value or "").strip()
+                    rst_bd.Close()
+                except:
+                    pass
+
+    # 3. Fallback based on hint
+    if not vcode:
+        try:
+            type_filter = ""
+            if hint == "receipt":
+                type_filter = "WHERE VchType = 14"
+            elif hint == "sale":
+                type_filter = "WHERE VchType = 9"
+            elif hint == "payment":
+                type_filter = "WHERE VchType = 15"
+                
+            sql_latest = f"SELECT TOP 1 VchCode, VchType, VchNo FROM Tran1 {type_filter} ORDER BY VchCode DESC"
+            rst_l = _get_rs(sql_latest)
+            if not rst_l.EOF:
+                vcode = int(rst_l.Fields("VchCode").Value)
+                vtype = int(rst_l.Fields("VchType").Value)
+                vno_found = str(rst_l.Fields("VchNo").Value or "").strip()
+            rst_l.Close()
+        except:
+            pass
+
+    return {"vcode": vcode, "vtype": vtype, "vno": vno_found} if vcode else None
+
+
+def find_sales_voucher(vch_no=None, phone=None, date_str=None):
+    """Backwards compatibility wrapper for find_voucher with hint='sale'."""
+    res = find_voucher(vch_no=vch_no, phone=phone, date_str=date_str, hint="sale")
+    return {"vcode": res["vcode"]} if res else None
+
+
+

@@ -24,16 +24,18 @@ invoices_bp = Blueprint("invoices", __name__)
 def _build_invoice_whatsapp_msg(vno: str, date_str: str, party_name: str,
                                  total: str, url: str) -> str:
     """Build the WhatsApp text message that contains the invoice link."""
-    msg  = f"🧾 *बिल — {party_name}*\n"
+    msg  = f"🧾 *बिल / SALES INVOICE*\n"
     msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"📋 *बिल नंबर:* {vno}\n"
+    msg += f"*{party_name}*\n"
+    msg += f"━━━━━━━━━━━━━━━━━━\n"
+    msg += f"📋 *बिल नंबर:* *{vno}*\n"
     msg += f"📅 *दिनांक:* {date_str}\n"
     msg += f"💰 *कुल राशि:* *{total}*\n\n"
     msg += f"📲 *अपना बिल देखें / View your bill:*\n"
     msg += f"{url}\n\n"
     msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"🏪 *GOPAL MARKETING*\n"
-    msg += f"📍 GREEK PARK, AMBIKAPUR\n"
+    msg += f"🏪 *गोपाल मार्केटिंग*\n"
+    msg += f"📍 ग्रीक पार्क, अंबिकापुर\n"
     msg += f"📞 9977414177"
     return msg
 
@@ -48,8 +50,8 @@ def _build_ledger_whatsapp_msg(party_name: str, balance_text: str,
     msg += f"📲 *पूरा विवरण देखें / View full statement:*\n"
     msg += f"{url}\n\n"
     msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"🏪 *GOPAL MARKETING*\n"
-    msg += f"📍 GREEK PARK, AMBIKAPUR\n"
+    msg += f"🏪 *गोपाल मार्केटिंग*\n"
+    msg += f"📍 ग्रीक पार्क, अंबिकापुर\n"
     msg += f"📞 9977414177"
     return msg
 
@@ -396,3 +398,24 @@ def api_r2_cleanup():
         return jsonify({"success": True, "stats": stats})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BUSY 21 WIN WEBHOOK / SMS DISPATCH
+# ═══════════════════════════════════════════════════════════════════════════
+
+@invoices_bp.route("/api/message/busy-send", methods=["GET", "POST"])
+@invoices_bp.route("/api/busy/send", methods=["GET", "POST"])
+@invoices_bp.route("/api/busy-send", methods=["GET", "POST"])
+def api_busy_message_send():
+    """Delegate to busy_webhook handler."""
+    from routes.busy_webhook import handle_busy_send
+    return handle_busy_send()
+
+
+@invoices_bp.route("/api/busy/dispatches", methods=["GET"])
+def api_busy_dispatches_list():
+    """Delegate to busy dispatches list."""
+    from routes.busy_webhook import get_recent_busy_dispatches
+    return get_recent_busy_dispatches()
+

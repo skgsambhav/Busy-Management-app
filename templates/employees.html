@@ -250,9 +250,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const days = parseInt(this.getAttribute('data-days'));
             const end = new Date();
             const start = new Date(end);
-            if (days > 1) {
-                start.setDate(end.getDate() - days);
-            }
+            start.setDate(end.getDate() - (days === 1 ? 0 : days - 1));
 
             document.getElementById("fromDate").value = formatDateInput(start);
             document.getElementById("toDate").value = formatDateInput(end);

@@ -36,11 +36,13 @@ def register_blueprints(app):
     app.register_blueprint(gm_bp)
     app.register_blueprint(invoices_bp)
     
-    # New Blueprints
     from routes.ng_purchase import ng_purchase_bp
     from routes.gst_purchase import gst_purchase_bp
     from routes.print_routes import print_bp
+    from routes.busy_webhook import busy_webhook_bp
     
     app.register_blueprint(ng_purchase_bp)
     app.register_blueprint(gst_purchase_bp)
     app.register_blueprint(print_bp)
+    app.register_blueprint(busy_webhook_bp)
+

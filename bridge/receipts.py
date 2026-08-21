@@ -272,8 +272,9 @@ def get_receipt_voucher_details(vcode):
     """Get line-item and reference details for a single Receipt Voucher."""
     # 1. Header Info
     sql_header = f"""
-        SELECT t1.VchCode, t1.VchNo, t1.Date, t1.VchAmtBaseCur, t1.Narration
+        SELECT t1.VchCode, t1.VchNo, t1.Date, t1.VchAmtBaseCur, vo.Narration1
         FROM Tran1 t1
+        LEFT JOIN VchOtherInfo vo ON t1.VchCode = vo.VchCode
         WHERE t1.VchCode = {vcode}
     """
     rst_h = _get_rs(sql_header)
@@ -283,34 +284,52 @@ def get_receipt_voucher_details(vcode):
         
     vno = str(rst_h.Fields("VchNo").Value or "").strip()
     d_val = rst_h.Fields("Date").Value
-    vdate = d_val.strftime("%d-%m-%Y") if d_val else ""
+    vdate = format_out_date(d_val, "")
     amount = float(rst_h.Fields("VchAmtBaseCur").Value or 0)
-    narration = str(rst_h.Fields("Narration").Value or "").strip()
+    narration = str(rst_h.Fields("Narration1").Value or "").strip()
     rst_h.Close()
     
     # 2. Party Name and Cash/Bank Name
     sql_ledgers = f"""
-        SELECT t2.Value1, m.Name AS AccountName
+        SELECT t2.Value1, t2.MasterCode1, m.Name AS AccountName, m.NameSL AS AccountNameSL
         FROM Tran2 t2
         INNER JOIN Master1 m ON t2.MasterCode1 = m.Code
         WHERE t2.VchCode = {vcode} AND t2.RecType = 1
     """
     rst_l = _get_rs(sql_ledgers)
     party_name = ""
+    party_name_hi = ""
+    party_code = 0
     cash_bank_name = ""
     while not rst_l.EOF:
         val = float(rst_l.Fields("Value1").Value or 0)
         acc_name = str(rst_l.Fields("AccountName").Value or "").strip()
+        acc_name_hi = str(rst_l.Fields("AccountNameSL").Value or "").strip()
+        mcode = int(rst_l.Fields("MasterCode1").Value or 0)
         if val > 0:
             party_name = acc_name
+            party_name_hi = acc_name_hi
+            party_code = mcode
         elif val < 0:
             cash_bank_name = acc_name
         rst_l.MoveNext()
     rst_l.Close()
+
+    # 3. Party Mobile
+    mobile = ""
+    if party_code:
+        try:
+            sql_m = f"SELECT Mobile FROM MasterAddressInfo WHERE MasterCode = {party_code}"
+            rst_m = _get_rs(sql_m)
+            if not rst_m.EOF:
+                mobile = str(rst_m.Fields("Mobile").Value or "").strip()
+            rst_m.Close()
+        except:
+            pass
     
-    # 3. Bill Adjustments
+    # 4. Bill Adjustments
     sql_adj = f"""
-        SELECT No, Value1 FROM Tran3 WHERE VchCode = {vcode}
+        SELECT [No], Value1 FROM Tran3 WHERE VchCode = {vcode}
     """
     rst_a = _get_rs(sql_adj)
     adjustments = []
@@ -323,11 +342,17 @@ def get_receipt_voucher_details(vcode):
     rst_a.Close()
     
     return {
+        "vcode": vcode,
         "vchno": vno,
+        "vno": vno,
         "date": vdate,
         "amount": amount,
         "narration": narration,
         "party_name": party_name,
+        "party_name_hi": party_name_hi,
+        "party_code": party_code,
+        "mobile": mobile,
         "cash_bank_name": cash_bank_name,
         "adjustments": adjustments
     }
+

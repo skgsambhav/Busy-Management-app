@@ -347,3 +347,105 @@ def get_employee_performance_metrics(from_date=None, to_date=None):
         "employees": emp_totals,
         "timeline": timeline
     }
+
+
+
+def get_commission_analytics(from_date=None, to_date=None):
+    if not to_date:
+        end_date = datetime.datetime.now()
+    else:
+        end_date = datetime.datetime.strptime(to_date, "%Y-%m-%d")
+    if not from_date:
+        start_date = end_date - datetime.timedelta(days=30)
+    else:
+        start_date = datetime.datetime.strptime(from_date, "%Y-%m-%d")
+        
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    data = {}
+    
+    # 1. Employee Voucher Totals
+    sql_vch = f"""
+        SELECT vo.OF7 as Employee, COUNT(t1.VchCode) as VchCount, SUM(t1.VchAmtBaseCur) as VchAmount
+        FROM Tran1 t1
+        INNER JOIN VchOtherInfo vo ON t1.VchCode = vo.VchCode
+        WHERE t1.VchType = 9 AND t1.Date >= #{start_str}# AND t1.Date <= #{end_str}#
+          AND vo.OF7 IS NOT NULL 
+        GROUP BY vo.OF7
+    """
+    try:
+        rs = _get_rs(sql_vch)
+        while not rs.EOF:
+            emp = str(rs.Fields('Employee').Value or "").strip()
+            if emp and emp.upper() != "N/A":
+                if emp not in data:
+                    data[emp] = {"bills": 0, "sales_amount": 0, "total_items": 0, "categories": {}}
+                data[emp]["bills"] += int(rs.Fields('VchCount').Value or 0)
+                data[emp]["sales_amount"] += float(rs.Fields('VchAmount').Value or 0)
+            rs.MoveNext()
+        rs.Close()
+    except Exception as e:
+        print(f"Error getting commission vch: {e}")
+
+    # 2. Employee Item Category Breakdown
+    sql_items = f"""
+        SELECT vo.OF7 as Employee, 
+               m_group.Name as CategoryName,
+               SUM(ABS(t2.D1)) as Qty,
+               SUM(ABS(t2.Value3)) as Amount
+        FROM (((Tran1 t1
+        INNER JOIN VchOtherInfo vo ON t1.VchCode = vo.VchCode)
+        INNER JOIN Tran2 t2 ON t1.VchCode = t2.VchCode)
+        INNER JOIN Master1 m_item ON t2.MasterCode1 = m_item.Code)
+        LEFT JOIN Master1 m_group ON m_item.ParentGrp = m_group.Code
+        WHERE t1.VchType = 9 AND t2.RecType = 2
+          AND t1.Date >= #{start_str}# AND t1.Date <= #{end_str}#
+          AND vo.OF7 IS NOT NULL
+        GROUP BY vo.OF7, m_group.Name
+    """
+    try:
+        rs = _get_rs(sql_items)
+        while not rs.EOF:
+            emp = str(rs.Fields('Employee').Value or "").strip()
+            cat = str(rs.Fields('CategoryName').Value or "Uncategorized").strip()
+            qty = float(rs.Fields('Qty').Value or 0)
+            amt = float(rs.Fields('Amount').Value or 0)
+            
+            if emp and emp.upper() != "N/A":
+                if emp not in data:
+                    data[emp] = {"bills": 0, "sales_amount": 0, "total_items": 0, "categories": {}}
+                if cat not in data[emp]["categories"]:
+                    data[emp]["categories"][cat] = {"qty": 0, "amount": 0}
+                
+                data[emp]["categories"][cat]["qty"] += qty
+                data[emp]["categories"][cat]["amount"] += amt
+                data[emp]["total_items"] += qty
+            rs.MoveNext()
+        rs.Close()
+    except Exception as e:
+        print(f"Error getting commission items: {e}")
+
+    for emp in data:
+        cat_list = [{"name": k, "qty": v["qty"], "amount": v["amount"]} for k, v in data[emp]["categories"].items()]
+        cat_list.sort(key=lambda x: x["amount"], reverse=True)
+        data[emp]["categories"] = cat_list
+
+    result_list = []
+    for emp, d in data.items():
+        result_list.append({
+            "employee": emp,
+            "bills": d["bills"],
+            "sales_amount": d["sales_amount"],
+            "total_items": d["total_items"],
+            "categories": d["categories"]
+        })
+        
+    result_list.sort(key=lambda x: x["sales_amount"], reverse=True)
+
+    return {
+        "from_date": start_str,
+        "to_date": end_str,
+        "data": result_list
+    }
+

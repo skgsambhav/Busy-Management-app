@@ -198,7 +198,7 @@ def send_whatsapp_media(to_number, media_url, filename="Invoice.pdf", caption=""
         raise Exception(f"WhatsApp API Error: {err_detail}")
 
 def format_invoice_msg_en(data):
-    msg = f"Hello {data['party_name']},\n\n"
+    msg = f"*{data['party_name']}*\n\n"
     msg += f"Your invoice *{data['vno']}* dated *{data['date']}* has been generated.\n\n"
     msg += f"Total Amount: *₹{data['total_amount']:,.2f}*\n\n"
     msg += "Items:\n"
@@ -212,12 +212,15 @@ def format_invoice_msg_en(data):
         msg += "\n"
             
     msg += f"Total Qty: *{data['total_qty']}*\n\n"
-    msg += "Thank you for your business!"
+    msg += "━━━━━━━━━━━━━━━━━━\n"
+    msg += "🏪 *गोपाल मार्केटिंग*\n"
+    msg += "📍 ग्रीक पार्क, अंबिकापुर\n"
+    msg += "📞 9977414177"
     return msg
 
 def format_invoice_msg_hi(data):
-    party_name = data.get('party_name_hi') or data['party_name']
-    msg = f"नमस्ते {party_name},\n\n"
+    party_name = data.get('party_name', 'Customer')
+    msg = f"*{party_name}*\n\n"
     msg += f"आपका बिल नंबर *{data['vno']}* दिनांक *{data['date']}* को जारी कर दिया गया है।\n\n"
     msg += f"कुल राशि: *₹{data['total_amount']:,.2f}*\n\n"
     msg += "सामग्री (Items):\n"
@@ -232,15 +235,16 @@ def format_invoice_msg_hi(data):
         msg += "\n"
             
     msg += f"कुल मात्रा: *{data['total_qty']}*\n\n"
-    msg += "*GOPAL MARKETING*"
+    msg += "━━━━━━━━━━━━━━━━━━\n"
+    msg += "🏪 *गोपाल मार्केटिंग*\n"
+    msg += "📍 ग्रीक पार्क, अंबिकापुर\n"
+    msg += "📞 9977414177"
     return msg
 
 def format_invoice_msg_both(data):
     party_en = data['party_name']
-    party_hi = data.get('party_name_hi') or party_en
-    party_display = f"{party_en} / {party_hi}" if party_en != party_hi else party_en
     
-    msg = f"Hello / नमस्ते {party_display},\n\n"
+    msg = f"*{party_en}*\n\n"
     msg += f"Invoice / बिल: *{data['vno']}* | Date / दिनांक: *{data['date']}*\n"
     msg += f"Total Amt / कुल राशि: *₹{data['total_amount']:,.2f}*\n\n"
     msg += "Items / सामग्री:\n"
@@ -257,7 +261,10 @@ def format_invoice_msg_both(data):
         msg += "\n"
             
     msg += f"Total Qty / कुल मात्रा: *{data['total_qty']}*\n\n"
-    msg += "Thank you / धन्यवाद!"
+    msg += "━━━━━━━━━━━━━━━━━━\n"
+    msg += "🏪 *गोपाल मार्केटिंग*\n"
+    msg += "📍 ग्रीक पार्क, अंबिकापुर\n"
+    msg += "📞 9977414177"
     return msg
 
 def send_whatsapp_invoice(vcode, language, phone):
@@ -339,8 +346,8 @@ def send_whatsapp_ledger(party_code, phone):
 
     msg += f"━━━━━━━━━━━━━━━━━━\n"
     msg += f"कृपया समय पर भुगतान करें। 🙏\n\n"
-    msg += "🏬 *GOPAL MARKETING*\n"
-    msg += "📍 AMBIKAPUR\n"
-    msg += "📞 9977414177, 9406040611"
+    msg += "🏪 *गोपाल मार्केटिंग*\n"
+    msg += "📍 ग्रीक पार्क, अंबिकापुर\n"
+    msg += "📞 9977414177"
     
     return send_whatsapp_message(phone, msg)

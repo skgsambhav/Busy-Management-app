@@ -47,9 +47,22 @@ def auto_translate_hindi_background():
     except Exception as e:
         print(f"Auto-translation failed: {e}", flush=True)
 
-# Start background warmup & auto-translation
-# threading.Thread(target=warmup_cache, daemon=True).start()
-# threading.Thread(target=auto_translate_hindi_background, daemon=True).start()
+# Start Scrutiny Runner as a separate 32-bit subprocess for COM compatibility
+try:
+    import subprocess, sys, os
+    _py32 = r"C:\Python32\python.exe"
+    _runner = os.path.join(os.path.dirname(__file__), "services", "scrutiny_runner.py")
+    if os.path.exists(_py32) and os.path.exists(_runner):
+        subprocess.Popen(
+            [_py32, _runner],
+            cwd=os.path.dirname(__file__),
+            creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
+        )
+        print("Scrutiny Runner subprocess started (32-bit).", flush=True)
+    else:
+        print(f"Scrutiny Runner skipped: py32={os.path.exists(_py32)}, runner={os.path.exists(_runner)}", flush=True)
+except Exception as e:
+    print(f"Failed to start scrutiny runner: {e}")
 
 
 # -----------------------------------------------------------------------

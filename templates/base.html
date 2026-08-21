@@ -160,7 +160,7 @@
 
 
             <!-- Performance Analytics Group -->
-            <div class="nav-group {% if request.endpoint in ['analyzer.performance_view', 'analyzer.users_view', 'analyzer.employees_view'] %}open{% endif %}">
+            <div class="nav-group {% if request.endpoint in ['analyzer.performance_view', 'analyzer.users_view', 'analyzer.employees_view', 'analyzer.commission_view'] %}open{% endif %}">
                 <div class="nav-group-header" onclick="toggleNavGroup(this)">
                     <div class="nav-icon" style="background: rgba(34, 197, 94, 0.1); color: #22c55e;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
@@ -177,6 +177,9 @@
                     </a>
                     <a href="{{ url_for('analyzer.employees_view') }}" class="nav-item {% if request.endpoint == 'analyzer.employees_view' %}active{% endif %}">
                         <span>Employees</span>
+                    </a>
+                    <a href="{{ url_for('analyzer.commission_view') }}" class="nav-item {% if request.endpoint == 'analyzer.commission_view' %}active{% endif %}">
+                        <span>Staff Commission</span>
                     </a>
                 </div>
             </div>

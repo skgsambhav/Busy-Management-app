@@ -21,7 +21,7 @@ from bridge.connection import initialize_bfe
 from bridge.masters import get_parties, get_cash_bank_accounts, get_company_info, update_master_namesl, get_suppliers
 from bridge.ledger import get_outstanding_bills, get_party_balance, get_trial_balance, get_ledger
 from bridge.receipts import get_recent_receipts, create_receipt, get_receipt_voucher_details
-from bridge.sales import get_daybook, get_sales_vouchers, get_sales_voucher_details, create_sales_voucher
+from bridge.sales import get_daybook, get_sales_vouchers, get_sales_voucher_details, create_sales_voucher, find_sales_voucher, find_voucher
 from bridge.items import get_items, update_item_prices
 from bridge.ng_purchase import create_purchase_voucher
 from bridge.gst_purchase import create_gst_purchase_voucher
@@ -91,6 +91,10 @@ def main():
                 result = {"data": get_sales_vouchers(cmd.get("date"))}
             elif action == "get_sales_voucher_details":
                 result = get_sales_voucher_details(int(cmd["vcode"]))
+            elif action == "find_sales_voucher":
+                result = {"data": find_sales_voucher(vch_no=cmd.get("vch_no"), phone=cmd.get("phone"), date_str=cmd.get("date_str"))}
+            elif action == "find_voucher":
+                result = {"data": find_voucher(vch_no=cmd.get("vch_no"), phone=cmd.get("phone"), date_str=cmd.get("date_str"), hint=cmd.get("hint"))}
             elif action == "get_receipt_voucher_details":
                 result = get_receipt_voucher_details(int(cmd["vcode"]))
             elif action == "get_recent_receipts":
@@ -132,8 +136,7 @@ def main():
                     total_amount=float(cmd["total_amount"]),
                     narration=str(cmd.get("narration", "")),
                     bill_adjustments=cmd.get("bill_adjustments", []),
-                    stpt_name=str(cmd.get("stpt_name", "L/GST-ItemWise")),
-                    bill_no=str(cmd.get("bill_no", ""))
+                    stpt_name=str(cmd.get("stpt_name", "L/GST-ItemWise"))
                 )
             elif action == "get_items":
                 result = {"data": get_items()}
@@ -209,6 +212,11 @@ def main():
                 from_date = cmd.get("from_date")
                 to_date = cmd.get("to_date")
                 result = {"data": get_employee_performance_metrics(from_date, to_date)}
+            elif action == "get_commission_analytics":
+                from_date = cmd.get("from_date")
+                to_date = cmd.get("to_date")
+                from bridge.users import get_commission_analytics
+                result = {"data": get_commission_analytics(from_date, to_date)}
             elif action == "get_user_vouchers":
                 username = cmd.get("username")
                 from_date = cmd.get("from_date")

@@ -122,6 +122,18 @@ def get_sales_voucher_details(vcode: int):
     return _send_command({"cmd": "get_sales_voucher_details", "vcode": vcode})
 
 
+def find_sales_voucher(vch_no: str = None, phone: str = None, date_str: str = None):
+    """Search for a sales voucher by voucher number or party phone number."""
+    return _send_command({"cmd": "find_sales_voucher", "vch_no": vch_no, "phone": phone, "date_str": date_str})["data"]
+
+
+def find_voucher(vch_no: str = None, phone: str = None, date_str: str = None, hint: str = None):
+    """Search for any voucher (Sales, Receipt, Payment) in Tran1."""
+    return _send_command({"cmd": "find_voucher", "vch_no": vch_no, "phone": phone, "date_str": date_str, "hint": hint})["data"]
+
+
+
+
 def get_recent_receipts(limit: int = 20):
     """Get recent receipt vouchers."""
     return _send_command({"cmd": "get_recent_receipts", "limit": limit})["data"]
@@ -222,6 +234,10 @@ def get_user_analytics(from_date: str = None, to_date: str = None):
 def get_employee_analytics(from_date: str = None, to_date: str = None):
     """Get employee (billed/packed) performance metrics between dates."""
     return _send_command({"cmd": "get_employee_analytics", "from_date": from_date, "to_date": to_date})["data"]
+
+def get_commission_analytics(from_date: str = None, to_date: str = None):
+    """Get employee commission tracking data."""
+    return _send_command({"cmd": "get_commission_analytics", "from_date": from_date, "to_date": to_date})["data"]
 
 def get_user_vouchers(username: str, from_date: str = None, to_date: str = None):
     """Get list of vouchers created by user between dates."""

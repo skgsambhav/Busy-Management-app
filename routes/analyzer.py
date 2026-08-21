@@ -293,6 +293,27 @@ def api_employee_analytics():
         print(f"ERROR in api_employee_analytics: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
+@analyzer_bp.route("/commission")
+def commission_view():
+    return render_template("commission.html")
+
+_commission_cache = TTLCache(maxsize=10, ttl=300)
+
+@cached(_commission_cache)
+def get_commission_analytics_cached(from_date, to_date):
+    return bfe_client.get_commission_analytics(from_date, to_date)
+
+@analyzer_bp.route("/api/commission_analytics")
+def api_commission_analytics():
+    from_date = request.args.get("from_date")
+    to_date = request.args.get("to_date")
+    try:
+        data = get_commission_analytics_cached(from_date, to_date)
+        return jsonify(data)
+    except Exception as e:
+        print(f"ERROR in api_commission_analytics: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
 @analyzer_bp.route("/api/user_vouchers")
 def api_user_vouchers():
     username = request.args.get("username")
