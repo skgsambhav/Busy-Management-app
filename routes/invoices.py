@@ -23,36 +23,44 @@ invoices_bp = Blueprint("invoices", __name__)
 
 def _build_invoice_whatsapp_msg(vno: str, date_str: str, party_name: str,
                                  total: str, url: str) -> str:
-    """Build the WhatsApp text message that contains the invoice link."""
-    msg  = f"🧾 *बिल / SALES INVOICE*\n"
+    """Build a compact, clean WhatsApp text message with invoice link."""
+    if str(total).startswith("₹"):
+        formatted_total = str(total)
+    else:
+        try:
+            val = float(str(total).replace(",", ""))
+            formatted_total = f"₹{val:,.2f}"
+        except Exception:
+            formatted_total = f"₹{total}"
+    
+    msg  = f"🏪 *गोपाल मार्केटिंग (GOPAL MARKETING)*\n"
+    msg += f"📍 ग्रीक पार्क, अंबिकापुर | 📞 9977414177\n"
     msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"*{party_name}*\n"
+    msg += f"🧾 *सेल्स बिल / SALES INVOICE*\n"
+    msg += f"🏢 *{party_name}*\n"
+    msg += f"📋 बिल नं: *{vno}* | 📅 दिनांक: {date_str}\n"
+    msg += f"💰 कुल राशि: *{formatted_total}*\n"
     msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"📋 *बिल नंबर:* *{vno}*\n"
-    msg += f"📅 *दिनांक:* {date_str}\n"
-    msg += f"💰 *कुल राशि:* *{total}*\n\n"
-    msg += f"📲 *अपना बिल देखें / View your bill:*\n"
-    msg += f"{url}\n\n"
-    msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"🏪 *गोपाल मार्केटिंग*\n"
-    msg += f"📍 ग्रीक पार्क, अंबिकापुर\n"
-    msg += f"📞 9977414177"
+    msg += f"📲 *डिजिटल बिल देखें / View & Download:*\n"
+    msg += f"👉 {url}\n\n"
+    msg += f"💡 _लिंक नीली (Clickable) न हो तो नंबर Save करें या 'Hi' भेजें।_"
     return msg
 
 
 def _build_ledger_whatsapp_msg(party_name: str, balance_text: str,
                                  dr_cr: str, url: str) -> str:
-    """Build the WhatsApp text message that contains the ledger link."""
+    """Build a compact, clean WhatsApp text message with ledger link."""
     dr_emoji = "🔴" if dr_cr == "Dr" else "🟢"
-    msg  = f"📒 *खाता विवरण — {party_name}*\n"
+    msg  = f"🏪 *गोपाल मार्केटिंग (GOPAL MARKETING)*\n"
+    msg += f"📍 ग्रीक पार्क, अंबिकापुर | 📞 9977414177\n"
     msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"{dr_emoji} *कुल बकाया:* {balance_text} {dr_cr}\n\n"
-    msg += f"📲 *पूरा विवरण देखें / View full statement:*\n"
-    msg += f"{url}\n\n"
+    msg += f"📒 *खाता विवरण / ACCOUNT STATEMENT*\n"
+    msg += f"🏢 *{party_name}*\n"
+    msg += f"{dr_emoji} कुल बकाया: *{balance_text} {dr_cr}*\n"
     msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"🏪 *गोपाल मार्केटिंग*\n"
-    msg += f"📍 ग्रीक पार्क, अंबिकापुर\n"
-    msg += f"📞 9977414177"
+    msg += f"📲 *पूरा खाता देखें / View Statement:*\n"
+    msg += f"👉 {url}\n\n"
+    msg += f"💡 _लिंक नीली (Clickable) न हो तो नंबर Save करें या 'Hi' भेजें।_"
     return msg
 
 

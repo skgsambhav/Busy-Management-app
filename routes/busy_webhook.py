@@ -15,8 +15,10 @@ from concurrent.futures import ThreadPoolExecutor
 from flask import Blueprint, request, jsonify, make_response
 
 import bfe_client
-from services.r2_store import upload_invoice_html, upload_pdf_bytes
+from services.r2_store import upload_invoice_html, upload_ledger_html, upload_pdf_bytes
 from services.invoice_renderer import render_invoice_html
+from services.ledger_renderer import render_ledger_html
+from routes.invoices import _build_ledger_whatsapp_msg
 from bridge.whatsapp import send_whatsapp_message, send_whatsapp_media, parse_and_clean_phone_numbers
 
 logger = logging.getLogger(__name__)
@@ -83,22 +85,74 @@ def _log_dispatch(phone, vno, vcode, party_name, amount, html_url, pdf_url, mess
         logger.error(f"[Busy Webhook] Failed to log dispatch: {e}")
 
 
+def _find_party_by_phone_or_name(phone: str = "", name_hint: str = ""):
+    """Find party dict from Busy database by phone number or party name."""
+    try:
+        parties = bfe_client.get_parties()
+    except Exception as e:
+        logger.error(f"[Busy Webhook] Failed to fetch parties: {e}")
+        return None
+        
+    last10 = ""
+    if phone:
+        digits = ''.join(c for c in str(phone) if c.isdigit())
+        if len(digits) >= 10:
+            last10 = digits[-10:]
+            
+    # 1. Try matching by phone
+    if last10:
+        for p in parties:
+            p_mob = ''.join(c for c in str(p.get("mobile", "")) if c.isdigit())
+            if last10 in p_mob or p_mob.endswith(last10):
+                return p
+                
+    # 2. Try matching by name hint
+    if name_hint:
+        clean_hint = name_hint.strip().lower()
+        # Exact match
+        for p in parties:
+            if str(p.get("name", "")).strip().lower() == clean_hint:
+                return p
+        # Substring match
+        for p in parties:
+            p_name = str(p.get("name", "")).strip().lower()
+            if clean_hint in p_name or p_name in clean_hint:
+                return p
+                
+    return None
+
+
 def _extract_vch_no_and_hint(text: str, filename: str = ""):
     """
-    Extract candidate voucher number and detect voucher type hint ('receipt', 'sale', or None).
-    Returns (vch_no_candidate, hint).
+    Extract candidate voucher number, report type hint ('ledger', 'receipt', 'sale', or None),
+    and candidate party name.
+    Returns (vch_no_candidate, hint, party_name_hint).
     """
     hint = None
     vch_no = ""
+    party_name_hint = ""
     
     combined_lower = f"{text or ''} {filename or ''}".lower()
     
-    if any(k in combined_lower for k in ["rcpt", "receipt", "received with thanks", "रसीद", "प्राप्त राशि"]):
+    # 1. Check for Ledger / Account Statement
+    if any(k in combined_lower for k in ["l e d g e r", "ledger", "account ledger", "statement", "खाता", "खाता विवरण", "बकाया"]):
+        hint = "ledger"
+    elif any(k in combined_lower for k in ["rcpt", "receipt", "received with thanks", "रसीद", "प्राप्त राशि"]):
         hint = "receipt"
     elif any(k in combined_lower for k in ["sale", "invoice", "बिल"]):
         hint = "sale"
         
-    # 1. Check filename patterns
+    # Extract party name candidate from text if present (e.g. Dear 'OM SHREE VINAYAK - LAKHANPUR')
+    if text:
+        m = re.search(r"Dear\s+['\"]([^'\"]+)['\"]", text, re.IGNORECASE)
+        if m:
+            party_name_hint = m.group(1).strip()
+        else:
+            m2 = re.search(r"Dear\s+([A-Za-z0-9\s\.\-\&\/]+?)(?:,|\s+Please|\s+find|\s+attached|\.|$)", text, re.IGNORECASE)
+            if m2:
+                party_name_hint = m2.group(1).strip()
+        
+    # 2. Check filename patterns
     if filename:
         # Pattern: -Rcpt-GMRCPT1262-154023.pdf or -Sale-GM4165-154023.pdf
         m = re.search(r'[-_]?(?:Sale|Purc|Rcpt|Receipt|Pay|Vch|Invoice)[-_]([A-Za-z0-9\/]+)(?:-\d+)?(?:\.pdf|\b)', filename, re.IGNORECASE)
@@ -108,7 +162,7 @@ def _extract_vch_no_and_hint(text: str, filename: str = ""):
                 hint = "receipt"
             elif "sale" in filename.lower():
                 hint = "sale"
-            return vch_no, hint
+            return vch_no, hint, party_name_hint
             
         # Pattern: GMRCPT1262-154023.pdf or GM4165-154023.pdf
         m = re.search(r'([A-Za-z0-9\/]+)-\d{6}(?:\.pdf|\b)', filename, re.IGNORECASE)
@@ -118,7 +172,7 @@ def _extract_vch_no_and_hint(text: str, filename: str = ""):
                 hint = "receipt"
             elif vch_no.upper().startswith("GM"):
                 hint = "sale"
-            return vch_no, hint
+            return vch_no, hint, party_name_hint
             
         # Direct GMRCPT or GM voucher in filename
         m = re.search(r'\b(GMRCPT\d+|RCPT\d+|GM\d+)\b', filename, re.IGNORECASE)
@@ -128,24 +182,24 @@ def _extract_vch_no_and_hint(text: str, filename: str = ""):
                 hint = "receipt"
             elif vch_no.upper().startswith("GM"):
                 hint = "sale"
-            return vch_no, hint
+            return vch_no, hint, party_name_hint
 
-    # 2. Check message text patterns
+    # 3. Check message text patterns
     if text:
         # Pattern: GMRCPT1262 or RCPT1262
         m = re.search(r'\b(GMRCPT\d+|RCPT\d+)\b', text, re.IGNORECASE)
         if m:
-            return m.group(1).strip(), "receipt"
+            return m.group(1).strip(), "receipt", party_name_hint
             
         # Pattern: GM4165
         m = re.search(r'\b(GM\d+)\b', text, re.IGNORECASE)
         if m:
-            return m.group(1).strip(), "sale"
+            return m.group(1).strip(), "sale", party_name_hint
             
         # Pattern: GM/26-27/001
         m = re.search(r'\b(GM\/[0-9\-]+\/\d+)\b', text, re.IGNORECASE)
         if m:
-            return m.group(1).strip(), "sale"
+            return m.group(1).strip(), "sale", party_name_hint
             
         # Pattern: Invoice No: 1234 or Receipt No: 1234
         m = re.search(r'(?:Invoice|Bill|Inv|Receipt|Rcpt|Vch|Voucher)\s*(?:No\.?|#|:)\s*([A-Za-z0-9\/\-]+)', text, re.IGNORECASE)
@@ -153,13 +207,13 @@ def _extract_vch_no_and_hint(text: str, filename: str = ""):
             cand = m.group(1).strip()
             if "receipt" in text.lower() or "rcpt" in text.lower():
                 hint = "receipt"
-            return cand, hint
+            return cand, hint, party_name_hint
 
-    return vch_no, hint
+    return vch_no, hint, party_name_hint
 
 
 def _build_receipt_whatsapp_msg(receipt_data: dict, current_balance: str = "") -> str:
-    """Build payment receipt message for WhatsApp."""
+    """Build a compact, clean WhatsApp payment receipt message."""
     vno = receipt_data.get("vno") or receipt_data.get("vchno", "")
     date_str = receipt_data.get("date", "")
     amount = float(receipt_data.get("amount", 0))
@@ -167,49 +221,49 @@ def _build_receipt_whatsapp_msg(receipt_data: dict, current_balance: str = "") -
     mode = receipt_data.get("cash_bank_name", "Cash/Bank")
     adjustments = receipt_data.get("adjustments", [])
     
-    msg  = f"🧾 *भुगतान रसीद / PAYMENT RECEIPT*\n"
+    msg  = f"🏪 *गोपाल मार्केटिंग (GOPAL MARKETING)*\n"
+    msg += f"📍 ग्रीक पार्क, अंबिकापुर | 📞 9977414177\n"
     msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"*{party_name}*\n"
-    msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"📋 *रसीद नंबर:* *{vno}*\n"
-    msg += f"📅 *दिनांक:* {date_str}\n"
-    msg += f"💰 *प्राप्त राशि:* *₹{amount:,.2f}*\n"
-    msg += f"💳 *माध्यम:* {mode}\n\n"
+    msg += f"🧾 *भुगतान रसीद / PAYMENT RECEIPT*\n"
+    msg += f"🏢 *{party_name}*\n"
+    msg += f"📋 रसीद नं: *{vno}* | 📅 दिनांक: {date_str}\n"
+    msg += f"💰 प्राप्त राशि: *₹{amount:,.2f}* ({mode})\n"
     
     if adjustments:
-        msg += f"📋 *एडजस्ट किए गए बिल (Bills Adjusted):*\n"
-        for adj in adjustments:
-            msg += f"  • {adj['ref_no']}: ₹{adj['amount']:,.2f}\n"
-        msg += "\n"
+        adj_strs = [f"{a['ref_no']}: ₹{a['amount']:,.2f}" for a in adjustments]
+        msg += f"🔹 एडजस्ट बिल: {', '.join(adj_strs)}\n"
         
     if current_balance:
-        msg += f"📊 *वर्तमान कुल बकाया (Net Balance):*\n"
-        msg += f"👉 *{current_balance}*\n\n"
+        msg += f"📊 वर्तमान बकाया: *{current_balance}*\n"
         
     msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"भुगतान के लिए धन्यवाद! 🙏\n"
-    msg += f"🏪 *गोपाल मार्केटिंग*\n"
-    msg += f"📍 ग्रीक पार्क, अंबिकापुर\n"
-    msg += f"📞 9977414177"
+    msg += f"🙏 *भुगतान के लिए धन्यवाद!*"
     return msg
 
 
 def _build_invoice_whatsapp_msg(vno: str, date_str: str, party_name: str,
                                 total: float, url: str) -> str:
-    """Build sales invoice message containing the interactive bill link."""
-    msg  = f"🧾 *बिल / SALES INVOICE*\n"
+    """Build a compact, clean WhatsApp text message with invoice link."""
+    if str(total).startswith("₹"):
+        formatted_total = str(total)
+    else:
+        try:
+            val = float(str(total).replace(",", ""))
+            formatted_total = f"₹{val:,.2f}"
+        except Exception:
+            formatted_total = f"₹{total}"
+    
+    msg  = f"🏪 *गोपाल मार्केटिंग (GOPAL MARKETING)*\n"
+    msg += f"📍 ग्रीक पार्क, अंबिकापुर | 📞 9977414177\n"
     msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"*{party_name}*\n"
+    msg += f"🧾 *सेल्स बिल / SALES INVOICE*\n"
+    msg += f"🏢 *{party_name}*\n"
+    msg += f"📋 बिल नं: *{vno}* | 📅 दिनांक: {date_str}\n"
+    msg += f"💰 कुल राशि: *{formatted_total}*\n"
     msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"📋 *बिल नंबर:* *{vno}*\n"
-    msg += f"📅 *दिनांक:* {date_str}\n"
-    msg += f"💰 *कुल राशि:* *₹{total:,.2f}*\n\n"
-    msg += f"📲 *अपना बिल देखें / View your bill:*\n"
-    msg += f"{url}\n\n"
-    msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"🏪 *गोपाल मार्केटिंग*\n"
-    msg += f"📍 ग्रीक पार्क, अंबिकापुर\n"
-    msg += f"📞 9977414177"
+    msg += f"📲 *डिजिटल बिल देखें / View & Download:*\n"
+    msg += f"👉 {url}\n\n"
+    msg += f"💡 _लिंक नीली (Clickable) न हो तो नंबर Save करें या 'Hi' भेजें।_"
     return msg
 
 
@@ -220,22 +274,23 @@ def _process_dispatch_background(target_phone: str, message_text: str, pdf_bytes
     """
     logger.info(f"[Busy Webhook Async] Processing dispatch for phone={target_phone}, file={pdf_filename}")
     
-    # 1. Search for corresponding voucher in Busy Database
-    vch_no_candidate, hint = _extract_vch_no_and_hint(message_text, pdf_filename)
+    # 1. Search for corresponding voucher / report in Busy Database
+    vch_no_candidate, hint, party_name_hint = _extract_vch_no_and_hint(message_text, pdf_filename)
     vcode = None
     vtype = None
     found_vno = ""
     
-    try:
-        found_vch = bfe_client.find_voucher(vch_no=vch_no_candidate, phone=target_phone, hint=hint)
-        if found_vch and found_vch.get("vcode"):
-            vcode = int(found_vch["vcode"])
-            vtype = int(found_vch.get("vtype") or 9)
-            found_vno = found_vch.get("vno", "")
-    except Exception as e:
-        logger.warning(f"[Busy Webhook Async] Voucher lookup failed: {e}")
+    if hint != "ledger":
+        try:
+            found_vch = bfe_client.find_voucher(vch_no=vch_no_candidate, phone=target_phone, hint=hint)
+            if found_vch and found_vch.get("vcode"):
+                vcode = int(found_vch["vcode"])
+                vtype = int(found_vch.get("vtype") or 9)
+                found_vno = found_vch.get("vno", "")
+        except Exception as e:
+            logger.warning(f"[Busy Webhook Async] Voucher lookup failed: {e}")
 
-    # 2. Dispatch based on Voucher Type
+    # 2. Dispatch based on Voucher Type / Report Type
     dispatch_status = "DELIVRD"
     error_detail = ""
     public_html_url = None
@@ -245,8 +300,51 @@ def _process_dispatch_background(target_phone: str, message_text: str, pdf_bytes
     total_amt = 0.0
 
     try:
+        # ──────── Case L: ACCOUNT LEDGER (Digital Statement) ────────
+        if hint == "ledger":
+            party = _find_party_by_phone_or_name(target_phone, party_name_hint)
+            if party:
+                party_code = int(party["code"])
+                party_name = party.get("name", party_name_hint or "Customer")
+                party_name_hi = party.get("name_hi") or party.get("name_sl") or ""
+                
+                ledger_data = bfe_client.get_ledger(party_code)
+                pending_bills = bfe_client.get_outstanding_bills(party_code)
+                try:
+                    company_info = bfe_client.get_company_info()
+                except Exception:
+                    company_info = {}
+                    
+                html_content = render_ledger_html(
+                    party_name=party_name,
+                    party_name_hi=party_name_hi,
+                    ledger_data=ledger_data,
+                    pending_bills=pending_bills,
+                    company_info=company_info
+                )
+                public_html_url = upload_ledger_html(party_code, html_content)
+                logger.info(f"[Busy Webhook Async] Generated online ledger HTML for party={party_code}: {public_html_url}")
+                
+                op_bal = float(ledger_data.get("op_bal", 0))
+                transactions = ledger_data.get("transactions", [])
+                running = op_bal
+                for t in transactions:
+                    running += float(t.get("amount", 0))
+                    
+                dr_cr = "Dr" if running < 0 else "Cr"
+                balance_text = f"₹{abs(running):,.2f}"
+                total_amt = abs(running)
+                vno = "LEDGER"
+                
+                msg = _build_ledger_whatsapp_msg(party_name, balance_text, dr_cr, public_html_url)
+                send_whatsapp_message(target_phone, msg)
+                logger.info(f"[Busy Webhook Async] Sent online ledger link for {party_name} to {target_phone} -> {public_html_url}")
+            else:
+                final_msg = message_text or f"Account Ledger from GOPAL MARKETING."
+                send_whatsapp_message(target_phone, final_msg)
+
         # ──────── Case A: RECEIPT VOUCHER (VchType = 14) ────────
-        if vcode and vtype == 14:
+        elif vcode and vtype == 14:
             receipt_data = bfe_client.get_receipt_voucher_details(vcode)
             if "error" not in receipt_data:
                 vno = receipt_data.get("vno") or receipt_data.get("vchno", vno)

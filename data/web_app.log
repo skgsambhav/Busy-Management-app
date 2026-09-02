@@ -1,0 +1,262 @@
+2026-08-28 15:22:21,491 - INFO - Starting Web-Based Voucher Approval Utility...
+2026-08-28 15:22:21,522 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5042
+2026-08-28 15:22:21,522 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-28 15:22:23,609 - INFO - BFE Successfully Connected
+2026-08-28 15:22:25,219 - INFO - 127.0.0.1 - - [28/Aug/2026 15:22:25] "GET / HTTP/1.1" 200 -
+2026-08-28 15:22:25,793 - INFO - 127.0.0.1 - - [28/Aug/2026 15:22:25] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:22:25,855 - INFO - 127.0.0.1 - - [28/Aug/2026 15:22:25] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:22:26,165 - INFO - 127.0.0.1 - - [28/Aug/2026 15:22:26] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-28 15:22:55,798 - INFO - 127.0.0.1 - - [28/Aug/2026 15:22:55] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:22:55,817 - INFO - 127.0.0.1 - - [28/Aug/2026 15:22:55] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:23:12,872 - INFO - 127.0.0.1 - - [28/Aug/2026 15:23:12] "POST /api/approve HTTP/1.1" 200 -
+2026-08-28 15:23:12,904 - INFO - 127.0.0.1 - - [28/Aug/2026 15:23:12] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:23:25,811 - INFO - 127.0.0.1 - - [28/Aug/2026 15:23:25] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:23:25,827 - INFO - 127.0.0.1 - - [28/Aug/2026 15:23:25] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:23:55,800 - INFO - 127.0.0.1 - - [28/Aug/2026 15:23:55] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:23:55,834 - INFO - 127.0.0.1 - - [28/Aug/2026 15:23:55] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:24:25,796 - INFO - 127.0.0.1 - - [28/Aug/2026 15:24:25] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:24:25,828 - INFO - 127.0.0.1 - - [28/Aug/2026 15:24:25] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:24:55,802 - INFO - 127.0.0.1 - - [28/Aug/2026 15:24:55] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:24:55,832 - INFO - 127.0.0.1 - - [28/Aug/2026 15:24:55] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:25:34,684 - INFO - Starting Web-Based Voucher Approval Utility...
+2026-08-28 15:25:34,715 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5042
+2026-08-28 15:25:34,715 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-28 15:25:36,144 - INFO - BFE Successfully Connected
+2026-08-28 15:25:36,881 - INFO - 127.0.0.1 - - [28/Aug/2026 15:25:36] "GET / HTTP/1.1" 200 -
+2026-08-28 15:25:37,312 - INFO - 127.0.0.1 - - [28/Aug/2026 15:25:37] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:25:37,358 - INFO - 127.0.0.1 - - [28/Aug/2026 15:25:37] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:25:37,598 - INFO - 127.0.0.1 - - [28/Aug/2026 15:25:37] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-28 15:26:07,313 - INFO - 127.0.0.1 - - [28/Aug/2026 15:26:07] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:26:07,327 - INFO - 127.0.0.1 - - [28/Aug/2026 15:26:07] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:26:37,311 - INFO - 127.0.0.1 - - [28/Aug/2026 15:26:37] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:26:37,327 - INFO - 127.0.0.1 - - [28/Aug/2026 15:26:37] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:26:51,009 - INFO - 127.0.0.1 - - [28/Aug/2026 15:26:51] "POST /api/cancel HTTP/1.1" 200 -
+2026-08-28 15:26:51,041 - INFO - 127.0.0.1 - - [28/Aug/2026 15:26:51] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:27:07,540 - INFO - 127.0.0.1 - - [28/Aug/2026 15:27:07] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:27:07,571 - INFO - 127.0.0.1 - - [28/Aug/2026 15:27:07] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:27:37,548 - INFO - 127.0.0.1 - - [28/Aug/2026 15:27:37] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:27:37,572 - INFO - 127.0.0.1 - - [28/Aug/2026 15:27:37] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:28:07,547 - INFO - 127.0.0.1 - - [28/Aug/2026 15:28:07] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:28:07,563 - INFO - 127.0.0.1 - - [28/Aug/2026 15:28:07] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:28:37,555 - INFO - 127.0.0.1 - - [28/Aug/2026 15:28:37] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:28:37,568 - INFO - 127.0.0.1 - - [28/Aug/2026 15:28:37] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:29:07,537 - INFO - 127.0.0.1 - - [28/Aug/2026 15:29:07] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:29:07,553 - INFO - 127.0.0.1 - - [28/Aug/2026 15:29:07] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:30:08,543 - INFO - 127.0.0.1 - - [28/Aug/2026 15:30:08] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:30:08,559 - INFO - 127.0.0.1 - - [28/Aug/2026 15:30:08] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:30:37,311 - INFO - 127.0.0.1 - - [28/Aug/2026 15:30:37] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:30:37,369 - INFO - 127.0.0.1 - - [28/Aug/2026 15:30:37] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:30:46,156 - INFO - Starting Web-Based Voucher Approval Utility...
+2026-08-28 15:30:46,187 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5042
+2026-08-28 15:30:46,187 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-28 15:30:47,600 - INFO - BFE Successfully Connected
+2026-08-28 15:30:48,285 - INFO - 127.0.0.1 - - [28/Aug/2026 15:30:48] "GET / HTTP/1.1" 200 -
+2026-08-28 15:30:48,680 - INFO - 127.0.0.1 - - [28/Aug/2026 15:30:48] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:30:48,726 - INFO - 127.0.0.1 - - [28/Aug/2026 15:30:48] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:30:48,853 - INFO - 127.0.0.1 - - [28/Aug/2026 15:30:48] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-28 15:31:18,691 - INFO - 127.0.0.1 - - [28/Aug/2026 15:31:18] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:31:18,724 - INFO - 127.0.0.1 - - [28/Aug/2026 15:31:18] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:31:48,697 - INFO - 127.0.0.1 - - [28/Aug/2026 15:31:48] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:31:48,718 - INFO - 127.0.0.1 - - [28/Aug/2026 15:31:48] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:32:18,692 - INFO - 127.0.0.1 - - [28/Aug/2026 15:32:18] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:32:18,726 - INFO - 127.0.0.1 - - [28/Aug/2026 15:32:18] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:32:22,612 - INFO - 127.0.0.1 - - [28/Aug/2026 15:32:22] "POST /api/approve HTTP/1.1" 200 -
+2026-08-28 15:32:22,647 - INFO - 127.0.0.1 - - [28/Aug/2026 15:32:22] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:32:48,682 - INFO - 127.0.0.1 - - [28/Aug/2026 15:32:48] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:32:48,706 - INFO - 127.0.0.1 - - [28/Aug/2026 15:32:48] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:33:18,693 - INFO - 127.0.0.1 - - [28/Aug/2026 15:33:18] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:33:18,715 - INFO - 127.0.0.1 - - [28/Aug/2026 15:33:18] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:33:48,684 - INFO - 127.0.0.1 - - [28/Aug/2026 15:33:48] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:33:48,718 - INFO - 127.0.0.1 - - [28/Aug/2026 15:33:48] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:34:18,680 - INFO - 127.0.0.1 - - [28/Aug/2026 15:34:18] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:34:18,704 - INFO - 127.0.0.1 - - [28/Aug/2026 15:34:18] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:34:48,691 - INFO - 127.0.0.1 - - [28/Aug/2026 15:34:48] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:34:48,710 - INFO - 127.0.0.1 - - [28/Aug/2026 15:34:48] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:35:18,690 - INFO - 127.0.0.1 - - [28/Aug/2026 15:35:18] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:35:18,725 - INFO - 127.0.0.1 - - [28/Aug/2026 15:35:18] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:35:48,699 - INFO - 127.0.0.1 - - [28/Aug/2026 15:35:48] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:35:48,730 - INFO - 127.0.0.1 - - [28/Aug/2026 15:35:48] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:36:18,686 - INFO - 127.0.0.1 - - [28/Aug/2026 15:36:18] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:36:18,706 - INFO - 127.0.0.1 - - [28/Aug/2026 15:36:18] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:36:48,678 - INFO - 127.0.0.1 - - [28/Aug/2026 15:36:48] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:36:48,701 - INFO - 127.0.0.1 - - [28/Aug/2026 15:36:48] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:39:06,497 - INFO - Starting Web-Based Voucher Approval Utility...
+2026-08-28 15:39:06,515 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5042
+2026-08-28 15:39:06,515 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-28 15:39:08,542 - INFO - BFE Successfully Connected
+2026-08-28 15:39:08,825 - INFO - 127.0.0.1 - - [28/Aug/2026 15:39:08] "GET / HTTP/1.1" 200 -
+2026-08-28 15:39:09,376 - INFO - 127.0.0.1 - - [28/Aug/2026 15:39:09] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:39:09,414 - INFO - 127.0.0.1 - - [28/Aug/2026 15:39:09] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:39:09,547 - INFO - 127.0.0.1 - - [28/Aug/2026 15:39:09] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-28 15:40:05,512 - INFO - Starting Web-Based Voucher Approval Utility...
+2026-08-28 15:40:05,527 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5042
+2026-08-28 15:40:05,527 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-28 15:40:07,391 - INFO - BFE Successfully Connected
+2026-08-28 15:40:07,615 - INFO - 127.0.0.1 - - [28/Aug/2026 15:40:07] "GET / HTTP/1.1" 200 -
+2026-08-28 15:40:08,091 - INFO - 127.0.0.1 - - [28/Aug/2026 15:40:08] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:40:08,131 - INFO - 127.0.0.1 - - [28/Aug/2026 15:40:08] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:40:08,270 - INFO - 127.0.0.1 - - [28/Aug/2026 15:40:08] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-28 15:40:38,538 - INFO - 127.0.0.1 - - [28/Aug/2026 15:40:38] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:40:38,603 - INFO - 127.0.0.1 - - [28/Aug/2026 15:40:38] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:41:08,197 - INFO - 127.0.0.1 - - [28/Aug/2026 15:41:08] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:41:08,236 - INFO - 127.0.0.1 - - [28/Aug/2026 15:41:08] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:41:38,550 - INFO - 127.0.0.1 - - [28/Aug/2026 15:41:38] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:41:38,576 - INFO - 127.0.0.1 - - [28/Aug/2026 15:41:38] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:42:08,545 - INFO - 127.0.0.1 - - [28/Aug/2026 15:42:08] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:42:08,576 - INFO - 127.0.0.1 - - [28/Aug/2026 15:42:08] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:42:20,530 - INFO - Starting Web-Based Voucher Approval Utility...
+2026-08-28 15:42:20,561 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5042
+2026-08-28 15:42:20,561 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-28 15:42:22,540 - INFO - 127.0.0.1 - - [28/Aug/2026 15:42:22] "GET / HTTP/1.1" 200 -
+2026-08-28 15:42:22,588 - INFO - BFE Successfully Connected
+2026-08-28 15:42:23,073 - INFO - 127.0.0.1 - - [28/Aug/2026 15:42:23] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:42:23,129 - INFO - 127.0.0.1 - - [28/Aug/2026 15:42:23] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:42:23,258 - INFO - 127.0.0.1 - - [28/Aug/2026 15:42:23] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-28 15:42:38,539 - INFO - 127.0.0.1 - - [28/Aug/2026 15:42:38] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:42:38,570 - INFO - 127.0.0.1 - - [28/Aug/2026 15:42:38] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:43:08,543 - INFO - 127.0.0.1 - - [28/Aug/2026 15:43:08] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:43:08,575 - INFO - 127.0.0.1 - - [28/Aug/2026 15:43:08] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:43:38,539 - INFO - 127.0.0.1 - - [28/Aug/2026 15:43:38] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:43:38,602 - INFO - 127.0.0.1 - - [28/Aug/2026 15:43:38] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:44:29,543 - INFO - 127.0.0.1 - - [28/Aug/2026 15:44:29] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:44:29,605 - INFO - 127.0.0.1 - - [28/Aug/2026 15:44:29] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:45:22,781 - INFO - 127.0.0.1 - - [28/Aug/2026 15:45:22] "GET /api/status HTTP/1.1" 200 -
+2026-08-28 15:45:22,825 - INFO - 127.0.0.1 - - [28/Aug/2026 15:45:22] "GET /api/data HTTP/1.1" 200 -
+2026-08-28 15:46:18,530 - INFO - Starting Web-Based Voucher Approval Utility...
+2026-08-28 15:46:18,561 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5042
+2026-08-28 15:46:18,561 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-28 15:46:20,442 - INFO - BFE Successfully Connected
+2026-08-28 15:46:20,442 - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "flask\app.py", line 1511, in wsgi_app
+  File "flask\app.py", line 919, in full_dispatch_request
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "web_app.py", line 76, in index
+  File "flask\templating.py", line 150, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 66, in get_source
+  File "flask\templating.py", line 100, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: voucher_approval.html
+2026-08-28 15:46:20,442 - INFO - 127.0.0.1 - - [28/Aug/2026 15:46:20] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2026-08-28 15:46:20,610 - INFO - 127.0.0.1 - - [28/Aug/2026 15:46:20] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-28 15:46:36,749 - INFO - Starting Web-Based Voucher Approval Utility...
+2026-08-28 15:46:36,764 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5042
+2026-08-28 15:46:36,764 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-28 15:46:38,676 - INFO - BFE Successfully Connected
+2026-08-28 15:46:38,870 - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "flask\app.py", line 1511, in wsgi_app
+  File "flask\app.py", line 919, in full_dispatch_request
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "web_app.py", line 76, in index
+  File "flask\templating.py", line 150, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 66, in get_source
+  File "flask\templating.py", line 100, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: voucher_approval.html
+2026-08-28 15:46:38,870 - INFO - 127.0.0.1 - - [28/Aug/2026 15:46:38] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2026-08-28 15:46:38,911 - INFO - 127.0.0.1 - - [28/Aug/2026 15:46:38] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-31 14:01:20,598 - INFO - Starting Web-Based Voucher Approval Utility...
+2026-08-31 14:01:20,619 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5042
+2026-08-31 14:01:20,619 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-31 14:01:22,338 - INFO - Starting Web-Based Voucher Approval Utility...
+2026-08-31 14:01:22,358 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5042
+2026-08-31 14:01:22,358 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-31 14:01:23,197 - INFO - BFE Successfully Connected
+2026-08-31 14:01:23,555 - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "flask\app.py", line 1511, in wsgi_app
+  File "flask\app.py", line 919, in full_dispatch_request
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "web_app.py", line 76, in index
+  File "flask\templating.py", line 150, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 66, in get_source
+  File "flask\templating.py", line 100, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: voucher_approval.html
+2026-08-31 14:01:23,559 - INFO - 127.0.0.1 - - [31/Aug/2026 14:01:23] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2026-08-31 14:01:23,604 - INFO - 127.0.0.1 - - [31/Aug/2026 14:01:23] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-31 14:01:24,430 - INFO - BFE Successfully Connected
+2026-08-31 14:01:24,656 - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "flask\app.py", line 1511, in wsgi_app
+  File "flask\app.py", line 919, in full_dispatch_request
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "web_app.py", line 76, in index
+  File "flask\templating.py", line 150, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 66, in get_source
+  File "flask\templating.py", line 100, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: voucher_approval.html
+2026-08-31 14:01:24,658 - INFO - 127.0.0.1 - - [31/Aug/2026 14:01:24] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2026-08-31 14:01:24,691 - INFO - 127.0.0.1 - - [31/Aug/2026 14:01:24] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-31 14:01:40,695 - INFO - Starting Web-Based Voucher Approval Utility...
+2026-08-31 14:01:40,714 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5042
+2026-08-31 14:01:40,715 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-31 14:01:42,855 - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "flask\app.py", line 1511, in wsgi_app
+  File "flask\app.py", line 919, in full_dispatch_request
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "web_app.py", line 76, in index
+  File "flask\templating.py", line 150, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 66, in get_source
+  File "flask\templating.py", line 100, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: voucher_approval.html
+2026-08-31 14:01:42,860 - INFO - 127.0.0.1 - - [31/Aug/2026 14:01:42] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2026-08-31 14:01:42,878 - INFO - BFE Successfully Connected
+2026-08-31 14:01:42,955 - INFO - Starting Web-Based Voucher Approval Utility...
+2026-08-31 14:01:42,974 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5042
+2026-08-31 14:01:42,975 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-31 14:01:43,046 - INFO - 127.0.0.1 - - [31/Aug/2026 14:01:43] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-31 14:01:45,088 - INFO - BFE Successfully Connected
+2026-08-31 14:01:45,096 - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "flask\app.py", line 1511, in wsgi_app
+  File "flask\app.py", line 919, in full_dispatch_request
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "web_app.py", line 76, in index
+  File "flask\templating.py", line 150, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 66, in get_source
+  File "flask\templating.py", line 100, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: voucher_approval.html
+2026-08-31 14:01:45,097 - INFO - 127.0.0.1 - - [31/Aug/2026 14:01:45] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2026-08-31 14:01:45,627 - INFO - 127.0.0.1 - - [31/Aug/2026 14:01:45] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -

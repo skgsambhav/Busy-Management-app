@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busy Voucher Approval</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SweetAlert2 for beautiful popups -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Tailwind slate-900 */
+            color: #f8fafc;
+            overflow: hidden; /* We'll handle scrolling internally */
+        }
+        
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        .scrollable {
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #475569 transparent;
+        }
+        .scrollable::-webkit-scrollbar {
+            width: 4px;
+        }
+        .scrollable::-webkit-scrollbar-thumb {
+            background-color: #475569;
+            border-radius: 10px;
+        }
+        
+        .btn-modern {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-modern:active {
+            transform: scale(0.95);
+        }
+
+        /* Loading Skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+        }
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col text-sm">
+
+    <!-- Top Navigation Bar -->
+    <nav class="glass-card flex justify-between items-center px-3 py-2 mb-2 z-10 sticky top-0 border-b border-slate-700">
+        <div class="flex items-center gap-2">
+            <div id="status-indicator" class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></div>
+            <h1 class="text-base font-bold tracking-tight text-white" id="status-text">BFE Connecting...</h1>
+        </div>
+        <div class="flex gap-2">
+            <button id="lock-btn" onclick="toggleLock()" class="btn-modern px-3 py-1.5 rounded bg-red-500 hover:bg-red-600 font-medium text-white shadow-lg flex items-center gap-1 text-xs">
+                <i class="fa-solid fa-lock"></i> <span>Locked</span>
+            </button>
+            <button id="refresh-btn" onclick="refreshData()" class="btn-modern px-3 py-1.5 rounded bg-indigo-500 hover:bg-indigo-600 font-medium text-white shadow-lg disabled:opacity-50 text-xs">
+                <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Tabs and Bulk Actions -->
+    <div class="px-3 mb-2 flex justify-between items-end">
+        <div class="flex space-x-1 p-1 bg-slate-800 rounded-lg" role="tablist">
+            <button id="tab-pending" onclick="switchTab('pending')" class="px-3 py-1.5 text-xs font-semibold rounded bg-slate-700 text-white shadow transition-all duration-200">
+                <i class="fa-solid fa-xmark text-red-400 mr-1"></i> Pending
+                <span id="pending-badge" class="ml-1 bg-red-500 text-white px-1.5 rounded-full text-[10px]">0</span>
+            </button>
+            <button id="tab-approved" onclick="switchTab('approved')" class="px-3 py-1.5 text-xs font-medium rounded text-slate-400 hover:text-white transition-all duration-200">
+                <i class="fa-solid fa-check text-emerald-400 mr-1"></i> Apprvd
+            </button>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div id="action-pending" class="block">
+            <button onclick="approveAll()" id="btn-approve-all" disabled class="btn-modern px-3 py-1.5 rounded bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-700 disabled:text-slate-400 font-bold text-white shadow-lg text-xs transition-all duration-200">
+                <i class="fa-solid fa-check-double mr-1"></i> Apprv All
+            </button>
+        </div>
+        <div id="action-approved" class="hidden">
+            <button onclick="cancelApproval()" id="btn-cancel" disabled class="btn-modern px-3 py-1.5 rounded bg-red-500 hover:bg-red-600 disabled:bg-slate-700 disabled:text-slate-400 font-bold text-white shadow-lg text-xs transition-all duration-200">
+                <i class="fa-solid fa-ban mr-1"></i> Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="flex-1 px-2 pb-2 overflow-hidden flex flex-col">
+        <!-- Pending View -->
+        <div id="view-pending" class="scrollable flex-1 pr-1 pb-4">
+            <div id="pending-container" class="space-y-2 pt-1">
+                <!-- Skeletons (Initial load) -->
+                <div class="glass-card rounded p-3 w-full h-20 skeleton"></div>
+                <div class="glass-card rounded p-3 w-full h-20 skeleton"></div>
+            </div>
+        </div>
+
+        <!-- Approved View (Compact Cards instead of wide Table) -->
+        <div id="view-approved" class="hidden flex-1 scrollable pr-1 pb-4">
+            <!-- Select All Checkbox for Approved -->
+            <div class="flex items-center gap-2 mb-2 px-2 py-1 bg-slate-800/50 rounded border border-slate-700/50">
+                <input type="checkbox" id="selectAll" onclick="toggleSelectAll()" class="rounded bg-slate-700 border-slate-600 w-3 h-3 text-indigo-500 focus:ring-0">
+                <label for="selectAll" class="text-xs text-slate-400 font-medium cursor-pointer">Select All Approved</label>
+            </div>
+            
+            <div id="approved-container" class="space-y-2">
+                <!-- Approved rows go here -->
+            </div>
+            <div id="approved-empty" class="hidden flex-col items-center justify-center h-48 text-slate-500">
+                <i class="fa-solid fa-folder-open text-3xl mb-2"></i>
+                <p class="text-xs">No approved vouchers</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer Status -->
+    <div class="px-3 py-1 text-[10px] text-slate-500 flex justify-between items-center bg-slate-900 border-t border-slate-800">
+        <span id="last-updated">Last updated: Never</span>
+        <span>Gopal Marketing</span>
+    </div>
+
+    <script>
+        let isLocked = true;
+        let isBfeConnected = false;
+        let pendingData = [];
+        let approvedData = [];
+        let selectedApproved = new Set();
+        let refreshInterval = null;
+
+        // Startup
+        document.addEventListener('DOMContentLoaded', () => {
+            checkStatus();
+            refreshInterval = setInterval(checkStatus, 30000);
+        });
+
+        function switchTab(tab) {
+            const btnP = document.getElementById('tab-pending');
+            const btnA = document.getElementById('tab-approved');
+            const vP = document.getElementById('view-pending');
+            const vA = document.getElementById('view-approved');
+            const aP = document.getElementById('action-pending');
+            const aA = document.getElementById('action-approved');
+
+            if(tab === 'pending') {
+                btnP.className = "px-3 py-1.5 text-xs font-semibold rounded bg-slate-700 text-white shadow transition-all duration-200";
+                btnA.className = "px-3 py-1.5 text-xs font-medium rounded text-slate-400 hover:text-white transition-all duration-200";
+                vP.classList.remove('hidden');
+                vA.classList.add('hidden');
+                aP.classList.remove('hidden');
+                aA.classList.add('hidden');
+            } else {
+                btnA.className = "px-3 py-1.5 text-xs font-semibold rounded bg-slate-700 text-white shadow transition-all duration-200";
+                btnP.className = "px-3 py-1.5 text-xs font-medium rounded text-slate-400 hover:text-white transition-all duration-200";
+                vA.classList.remove('hidden');
+                vP.classList.add('hidden');
+                aA.classList.remove('hidden');
+                aP.classList.add('hidden');
+            }
+        }
+
+        function toggleLock() {
+            if(isLocked) {
+                Swal.fire({
+                    title: 'Unlock Application',
+                    input: 'password',
+                    inputPlaceholder: 'Password',
+                    background: '#1e293b',
+                    color: '#fff',
+                    confirmButtonColor: '#6366f1',
+                    showCancelButton: true,
+                    cancelButtonColor: '#475569',
+                    customClass: { popup: 'text-sm' }
+                }).then((result) => {
+                    if(result.isConfirmed) {
+                        if(result.value === '1970') {
+                            isLocked = false;
+                            updateLockUI();
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Incorrect Password',
+                                background: '#1e293b',
+                                color: '#fff',
+                                confirmButtonColor: '#6366f1'
+                            });
+                        }
+                    }
+                });
+            } else {
+                isLocked = true;
+                updateLockUI();
+            }
+        }
+
+        function updateLockUI() {
+            const btn = document.getElementById('lock-btn');
+            if(isLocked) {
+                btn.className = "btn-modern px-3 py-1.5 rounded bg-red-500 hover:bg-red-600 font-medium text-white shadow-lg flex items-center gap-1 text-xs";
+                btn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>Locked</span>';
+            } else {
+                btn.className = "btn-modern px-3 py-1.5 rounded bg-emerald-500 hover:bg-emerald-600 font-medium text-white shadow-lg flex items-center gap-1 text-xs";
+                btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> <span>Unlock</span>';
+            }
+            updateActionButtons();
+        }
+
+        function updateActionButtons() {
+            document.getElementById('btn-approve-all').disabled = isLocked || pendingData.length === 0;
+            document.getElementById('btn-cancel').disabled = isLocked || selectedApproved.size === 0;
+        }
+
+        function formatInr(num) {
+            return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function getColorForCreator(creator) {
+            const c = creator.toUpperCase();
+            if(c === 'ADMIN') return 'text-rose-400';
+            if(c === 'SHREYAS') return 'text-sky-400';
+            if(c === 'GOPAL') return 'text-purple-400';
+            return 'text-slate-300';
+        }
+
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                isBfeConnected = data.bfe_active;
+                
+                const indicator = document.getElementById('status-indicator');
+                const text = document.getElementById('status-text');
+                
+                if(isBfeConnected) {
+                    indicator.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]";
+                    text.innerText = "Connected to Busy";
+                    text.className = "text-base font-bold tracking-tight text-emerald-400";
+                    document.getElementById('refresh-btn').disabled = false;
+                    fetchData();
+                } else {
+                    indicator.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_6px_rgba(239,68,68,0.8)]";
+                    text.innerText = "BFE Disconnected";
+                    text.className = "text-base font-bold tracking-tight text-red-400";
+                    document.getElementById('refresh-btn').disabled = true;
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function refreshData() {
+            const btn = document.getElementById('refresh-btn');
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+            btn.disabled = true;
+            await fetchData();
+            btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i>';
+            btn.disabled = false;
+        }
+
+        async function fetchData() {
+            try {
+                const res = await fetch('/api/data');
+                const data = await res.json();
+                
+                if(data.success) {
+                    pendingData = data.unapproved;
+                    approvedData = data.approved;
+                    document.getElementById('last-updated').innerText = `Updated: ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                    renderPending();
+                    renderApproved();
+                    updateActionButtons();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch(e) {
+                console.error("Fetch error:", e);
+                const text = document.getElementById('status-text');
+                const indicator = document.getElementById('status-indicator');
+                indicator.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse";
+                text.innerText = "Fetch Error (BFE)";
+                text.className = "text-base font-bold tracking-tight text-red-400";
+            }
+        }
+
+        function renderPending() {
+            const container = document.getElementById('pending-container');
+            document.getElementById('pending-badge').innerText = pendingData.length;
+            
+            if(pendingData.length === 0) {
+                container.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-48 text-slate-500">
+                    <i class="fa-solid fa-glass-cheers text-4xl mb-3 text-emerald-500/50"></i>
+                    <p class="text-sm font-medium">All caught up!</p>
+                </div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            pendingData.forEach((item, index) => {
+                const isChanged = item[8] === "Amount Changed";
+                const bgClass = isChanged ? 'bg-rose-900/20 border-rose-500/50' : 'bg-slate-800/60 border-slate-700/50';
+                
+                const card = document.createElement('div');
+                card.className = `glass-card p-2.5 rounded border flex justify-between items-center ${bgClass} mb-2 fade-in`;
+                card.style.animationDelay = `${index * 0.03}s`;
+                
+                let countBadge = item[7] > 0 ? `<span class="bg-amber-500/20 text-amber-400 text-[10px] px-1 rounded font-bold ml-1 flex items-center gap-0.5"><i class="fa-solid fa-rotate text-[8px]"></i> ${item[7]}</span>` : '';
+                let prevInfo = item[5] !== "-" ? `<span class="text-[10px] text-rose-400 font-medium ml-1 flex-shrink-0">(Was ₹${formatInr(item[5])})</span>` : '';
+                let changeWarn = isChanged ? `<span class="text-[10px] bg-rose-500/20 text-rose-400 px-1 rounded ml-1 font-bold flex-shrink-0"><i class="fa-solid fa-triangle-exclamation"></i> Changed</span>` : '';
+
+                card.innerHTML = `
+                    <div class="flex-1 min-w-0 pr-2">
+                        <div class="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                            <span class="text-slate-400 font-bold text-[11px] bg-slate-900/50 px-1 rounded"><i class="fa-solid fa-receipt mr-0.5"></i>${item[1]}</span>
+                            <span class="text-slate-500 text-[10px]">${item[2]}</span>
+                            <span class="text-[10px] font-bold ${getColorForCreator(item[4])}">${item[4]}</span>
+                            ${countBadge}
+                        </div>
+                        <h3 class="text-xs font-bold text-white mb-0.5 truncate" title="${item[3]}">${item[3]}</h3>
+                        <div class="flex items-center flex-wrap">
+                            <span class="text-sm font-bold text-emerald-400">₹${formatInr(item[6])}</span>
+                            ${prevInfo}
+                            ${changeWarn}
+                        </div>
+                    </div>
+                    <div class="pl-2 border-l border-slate-700/50 flex-shrink-0">
+                        <button onclick='approveSingle(${JSON.stringify(item)})' class="group relative overflow-hidden rounded w-10 h-10 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500 transition-all duration-200 flex items-center justify-center shadow">
+                            <i class="fa-solid fa-check text-lg text-emerald-400 group-hover:text-white group-hover:scale-110 transition-transform"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderApproved() {
+            const container = document.getElementById('approved-container');
+            const empty = document.getElementById('approved-empty');
+            
+            container.innerHTML = '';
+            
+            if(approvedData.length === 0) {
+                empty.classList.remove('hidden');
+                empty.classList.add('flex');
+                return;
+            }
+            
+            empty.classList.add('hidden');
+            empty.classList.remove('flex');
+            
+            // Clean up selected Set
+            const currentIds = new Set(approvedData.map(a => a[0]));
+            for (let id of selectedApproved) {
+                if (!currentIds.has(id)) selectedApproved.delete(id);
+            }
+
+            approvedData.forEach(item => {
+                const isChecked = selectedApproved.has(item[0]) ? "checked" : "";
+                
+                const card = document.createElement('div');
+                card.className = "glass-card p-2 rounded border border-slate-700/50 bg-slate-800/40 hover:bg-slate-800/80 cursor-pointer flex items-center gap-2 mb-1.5 transition-colors";
+                
+                card.onclick = (e) => {
+                    if(e.target.tagName !== 'INPUT') {
+                        const cb = document.getElementById(`cb-${item[0]}`);
+                        cb.checked = !cb.checked;
+                        toggleRowSelect(item[0], cb.checked);
+                    }
+                };
+
+                card.innerHTML = `
+                    <div class="flex-shrink-0 pt-0.5">
+                        <input type="checkbox" id="cb-${item[0]}" onchange="toggleRowSelect(${item[0]}, this.checked)" ${isChecked} class="rounded bg-slate-700 border-slate-600 w-3.5 h-3.5 text-indigo-500 focus:ring-0">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[11px] text-slate-300 font-medium truncate w-1/2">${item[1]} • <span class="${getColorForCreator(item[4])}">${item[4]}</span></span>
+                            <span class="text-[10px] text-slate-500 text-right">${item[2]}</span>
+                        </div>
+                        <div class="flex justify-between items-end">
+                            <h3 class="text-xs font-semibold text-slate-200 truncate w-3/5" title="${item[3]}">${item[3]}</h3>
+                            <span class="text-sm font-bold text-emerald-500/80">₹${formatInr(item[6])}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            updateActionButtons();
+        }
+
+        function toggleRowSelect(id, isSelected) {
+            if(isSelected) selectedApproved.add(id);
+            else selectedApproved.delete(id);
+            
+            const selectAll = document.getElementById('selectAll');
+            selectAll.checked = (selectedApproved.size > 0 && selectedApproved.size === approvedData.length);
+            
+            updateActionButtons();
+        }
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll').checked;
+            approvedData.forEach(item => {
+                const cb = document.getElementById(`cb-${item[0]}`);
+                if(cb) cb.checked = selectAll;
+                if(selectAll) selectedApproved.add(item[0]);
+                else selectedApproved.clear();
+            });
+            updateActionButtons();
+        }
+
+        function approveSingle(item) {
+            if(isLocked) {
+                Swal.fire({icon: 'warning', title: 'Locked!', background: '#1e293b', color: '#fff', confirmButtonColor: '#6366f1', customClass: { popup: 'text-sm' }});
+                return;
+            }
+            
+            Swal.fire({
+                title: 'Confirm',
+                html: `Approve <b class="text-white">${item[1]}</b> for <span class="text-emerald-400 font-bold">₹${formatInr(item[6])}</span>?`,
+                icon: 'question',
+                showCancelButton: true,
+                background: '#1e293b',
+                color: '#fff',
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#475569',
+                confirmButtonText: 'Approve',
+                customClass: { popup: 'text-sm' }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const res = await fetch('/api/approve', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ vcodes: [item[0]] })
+                        });
+                        const data = await res.json();
+                        if(data.success) {
+                            Toast.fire({icon: 'success', title: `Approved ${item[1]}`});
+                            fetchData();
+                        } else throw new Error(data.error);
+                    } catch (e) {
+                        Swal.fire({icon: 'error', title: 'Error', text: e.message, background: '#1e293b', color: '#fff'});
+                    }
+                }
+            });
+        }
+
+        function approveAll() {
+            if(isLocked) return;
+            Swal.fire({
+                title: 'Approve All?',
+                text: `Approve ${pendingData.length} vouchers?`,
+                icon: 'warning',
+                showCancelButton: true,
+                background: '#1e293b',
+                color: '#fff',
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#475569',
+                confirmButtonText: 'Approve All',
+                customClass: { popup: 'text-sm' }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const vcodes = pendingData.map(i => i[0]);
+                        const res = await fetch('/api/approve', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ vcodes: vcodes })
+                        });
+                        const data = await res.json();
+                        if(data.success) {
+                            Toast.fire({icon: 'success', title: `Approved ${vcodes.length} vouchers!`});
+                            fetchData();
+                        } else throw new Error(data.error);
+                    } catch (e) {
+                        Swal.fire({icon: 'error', title: 'Error', text: e.message, background: '#1e293b', color: '#fff'});
+                    }
+                }
+            });
+        }
+
+        function cancelApproval() {
+            if(isLocked) return;
+            Swal.fire({
+                title: 'Cancel Approval?',
+                text: `Cancel ${selectedApproved.size} vouchers?`,
+                icon: 'warning',
+                showCancelButton: true,
+                background: '#1e293b',
+                color: '#fff',
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#475569',
+                confirmButtonText: 'Cancel Apprv',
+                customClass: { popup: 'text-sm' }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const vcodes = Array.from(selectedApproved);
+                        const res = await fetch('/api/cancel', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ vcodes: vcodes })
+                        });
+                        const data = await res.json();
+                        if(data.success) {
+                            Toast.fire({icon: 'success', title: `Cancelled ${vcodes.length} vouchers.`});
+                            selectedApproved.clear();
+                            document.getElementById('selectAll').checked = false;
+                            fetchData();
+                        } else throw new Error(data.error);
+                    } catch (e) {
+                        Swal.fire({icon: 'error', title: 'Error', text: e.message, background: '#1e293b', color: '#fff'});
+                    }
+                }
+            });
+        }
+
+        // Subtler fade-in for compact UI
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+            .fade-in { animation: fadeIn 0.3s ease-out forwards; opacity: 0; }
+        `;
+        document.head.appendChild(style);
+
+        // Toast configuration
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'bottom-end',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+            background: '#1e293b',
+            color: '#fff',
+            customClass: { popup: 'text-xs' },
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+    </script>
+</body>
+</html>

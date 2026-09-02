@@ -215,7 +215,7 @@ def format_invoice_msg_en(data):
     msg += "━━━━━━━━━━━━━━━━━━\n"
     msg += "🏪 *गोपाल मार्केटिंग*\n"
     msg += "📍 ग्रीक पार्क, अंबिकापुर\n"
-    msg += "📞 9977414177"
+    msg += "📞 9977414177, 9406040611"
     return msg
 
 def format_invoice_msg_hi(data):
@@ -253,6 +253,8 @@ def format_invoice_msg_hi(data):
             unit_hi = it.get('unit_hi') or unit_en
             
         msg += f"{i+1}. {item_name} - {it['qty']} {unit_hi} @ ₹{it['price']:,.2f} = ₹{it['amount']:,.2f}\n\n"
+
+        
     if data.get('bill_sundries'):
         msg += "टैक्स / अन्य शुल्क:\n"
         for s in data['bill_sundries']:
@@ -263,7 +265,7 @@ def format_invoice_msg_hi(data):
     msg += "━━━━━━━━━━━━━━━━━━\n"
     msg += "🏪 *गोपाल मार्केटिंग*\n"
     msg += "📍 ग्रीक पार्क, अंबिकापुर\n"
-    msg += "📞 9977414177"
+    msg += "📞 9977414177, 9406040611"
     return msg
 
 def format_invoice_msg_both(data):
@@ -305,6 +307,7 @@ def format_invoice_msg_both(data):
         unit_display = f"{unit_en}/{unit_hi}" if unit_en != unit_hi else unit_en
         
         msg += f"{i+1}. {name_display} - {it['qty']} {unit_display} @ ₹{it['price']:,.2f} = ₹{it['amount']:,.2f}\n\n"
+        
     if data.get('bill_sundries'):
         msg += "Charges / Sundries:\n"
         for s in data['bill_sundries']:
@@ -315,7 +318,7 @@ def format_invoice_msg_both(data):
     msg += "━━━━━━━━━━━━━━━━━━\n"
     msg += "🏪 *गोपाल मार्केटिंग*\n"
     msg += "📍 ग्रीक पार्क, अंबिकापुर\n"
-    msg += "📞 9977414177"
+    msg += "📞 9977414177, 9406040611"
     return msg
 
 def send_whatsapp_invoice(vcode, language, phone):
@@ -399,6 +402,6 @@ def send_whatsapp_ledger(party_code, phone):
     msg += f"कृपया समय पर भुगतान करें। 🙏\n\n"
     msg += "🏪 *गोपाल मार्केटिंग*\n"
     msg += "📍 ग्रीक पार्क, अंबिकापुर\n"
-    msg += "📞 9977414177"
+    msg += "📞 9977414177, 9406040611"
     
     return send_whatsapp_message(phone, msg)

@@ -304,7 +304,7 @@ def get_sales_voucher_details(vcode):
         # Per official Busy docs (Inventory Day Book sample query):
         #   Tran2.CM3 = unit actually used in this transaction line
         #   Master1.CM1 = item's default main unit (fallback)
-        #   Master1.CM2 = item's alt unit (DO NOT USE)
+        #   Master1.CM2 = item's alt unit (DO NOT USE for display)
         tran_unit_code = rst_i.Fields("TranUnitCode").Value
         default_unit_code = rst_i.Fields("DefaultUnitCode").Value
         unit_code_val = tran_unit_code if tran_unit_code else default_unit_code
@@ -318,12 +318,12 @@ def get_sales_voucher_details(vcode):
             try:
                 ucode = int(unit_code_val)
                 if ucode > 0:
-                    # Use Help1 table exactly as Busy's own sample queries do
-                    rst_u = _get_rs(f"SELECT NameAlias, NameOrAlias FROM Help1 WHERE Code = {ucode} AND NameOrAlias = 1")
+                    # Use Help1 exactly as Busy's own sample queries do
+                    rst_u = _get_rs(f"SELECT NameAlias FROM Help1 WHERE Code = {ucode} AND NameOrAlias = 1")
                     if not rst_u.EOF:
                         unit_name = str(rst_u.Fields("NameAlias").Value or "").strip()
                     rst_u.Close()
-                    # Also get Hindi name from Master1 if available
+                    # Hindi name from Master1
                     rst_u2 = _get_rs(f"SELECT NameSL FROM Master1 WHERE Code = {ucode} AND MasterType = 8")
                     if not rst_u2.EOF:
                         unit_name_hi = str(rst_u2.Fields("NameSL").Value or "").strip()

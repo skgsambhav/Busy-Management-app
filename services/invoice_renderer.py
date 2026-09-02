@@ -90,11 +90,19 @@ def render_invoice_html(voucher_data: dict, company_info: dict = None) -> str:
     # Format items for template
     items = []
     for it in voucher_data.get("items", []):
+        unit_en = str(it.get("unit_en") or it.get("unit") or "").strip()
+        unit_hi_db = (it.get("unit_hi") or "").strip()
+        
+        # Use Busy DB Hindi name if set in Unit Master (Second Language)
+        # Otherwise show English unit name exactly as-is (PCS, BOX, PKD etc.)
+        # No hardcoded translations — respect what user has set in Busy
+        unit_hi = unit_hi_db if unit_hi_db else unit_en
+            
         items.append({
             "sr_no": it.get("sr_no", ""),
             "name": it.get("item_name_hi") or it.get("item_name", ""),
             "name_en": it.get("item_name", ""),
-            "unit": it.get("unit_hi") or it.get("unit", ""),
+            "unit": unit_hi,
             "qty": _fmt_qty(it.get("qty", 0)),
             "price": _fmt_amount(it.get("price", 0)),
             "amount": _fmt_amount(it.get("amount", 0)),
