@@ -95,10 +95,10 @@ def build_balance_message(customer_name, balance_amount, pending_bills=None):
     else:
         msg += f"\U0001f4b0 *\u0915\u0941\u0932 \u092c\u0915\u093e\u092f\u093e : \u20b9{abs(balance_amount):,.2f}*\n"
 
-    msg += f"\n━━━━━━━━━━━━━━━━━━\n"
-    msg += f"*GOPAL MARKETING*\n"
-    msg += f"GREEK PARK , AMBIKAPUR\n"
-    msg += f"\U0001f4de 9977414177, 9406040611"
+    msg += f"\n────────────────────────\n"
+    msg += f"🏪 *GOPAL MARKETING*\n"
+    msg += f"📍 ग्रीन पार्क कॉलोनी, खरसिया नाका, अंबिकापुर (छ.ग.)\n"
+    msg += f"📞 9977414177 | 9406040611"
     return msg
 
 

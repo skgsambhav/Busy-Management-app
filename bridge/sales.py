@@ -395,7 +395,34 @@ def get_sales_voucher_details(vcode):
         grand_total = round(db_net_total, 2)
     else:
         grand_total = round(total_amount + sum(s["amount"] for s in bill_sundries), 2)
-    
+
+    # 4. Loyalty Points — read from VchOtherInfo Optional Fields (OF1-OF4)
+    #    Busy "Printing Configuration" maps: OF1=Opening Points, OF2=Current Invoice Points Earn,
+    #    OF3=Redeemed Points, OF4=Total Points  (matches screenshot config exactly)
+    points_opening = 0.0
+    points_earned  = 0.0   # OF2 — points earned on THIS bill
+    points_redeemed = 0.0
+    total_points   = 0.0   # OF4 — cumulative balance after this bill
+    try:
+        sql_of = f"""
+            SELECT OF1, OF2, OF3, OF4
+            FROM VchOtherInfo
+            WHERE VchCode = {vcode}
+        """
+        rst_of = _get_rs(sql_of)
+        if not rst_of.EOF:
+            def _safe_float(val):
+                try: return round(float(val), 2) if val is not None else 0.0
+                except: return 0.0
+            points_opening  = _safe_float(rst_of.Fields("OF1").Value)
+            points_earned   = _safe_float(rst_of.Fields("OF2").Value)
+            points_redeemed = _safe_float(rst_of.Fields("OF3").Value)
+            total_points    = _safe_float(rst_of.Fields("OF4").Value)
+        rst_of.Close()
+    except Exception:
+        points_earned = 0.0
+        total_points  = 0.0
+
     return {
         "vcode": vcode,
         "vno": vno,
@@ -411,7 +438,12 @@ def get_sales_voucher_details(vcode):
         "bill_sundries": bill_sundries,
         "total_qty": total_qty,
         "item_total": round(total_amount, 2),
-        "total_amount": grand_total
+        "total_amount": grand_total,
+        # Loyalty Points from VchOtherInfo optional fields (OF1-OF4)
+        "points_opening": points_opening,    # OF1 — opening balance before this bill
+        "points_earned": points_earned,      # OF2 — earned on THIS bill (>0 means points given)
+        "points_redeemed": points_redeemed,  # OF3 — redeemed on this bill
+        "total_points": total_points         # OF4 — final balance after this bill
     }
 
 SALE_VCH_TYPE = 9

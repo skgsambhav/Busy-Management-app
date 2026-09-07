@@ -1,209 +1,1142 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="description" content="Sales Invoice - {{ company.name }}">
-<title>बिल {{ vno }} — {{ company.name }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sales Invoice - {{ party_name }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: Arial, sans-serif;
-    background: #ffffff;
-    color: #000000;
-    line-height: 1.3;
-    padding: 10px;
-    font-size: 13px;
-  }
-  .wrapper {
-    max-width: 800px;
-    margin: 0 auto;
-    border: 1px solid #000;
-    padding: 15px;
-  }
-  .header {
-    text-align: center;
-    border-bottom: 2px solid #000;
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-  }
-  .company-name { font-size: 22px; font-weight: bold; text-transform: uppercase; }
-  .company-name-hi { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
-  .company-meta { font-size: 12px; }
-  
-  .info-section {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #000;
-    padding-bottom: 10px;
-  }
-  .party-info {
-    width: 60%;
-  }
-  .party-info div { margin-bottom: 3px; }
-  
-  .bill-info {
-    width: 35%;
-    text-align: right;
-  }
-  .bill-info div { margin-bottom: 3px; }
-  
-  .items-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 10px;
-  }
-  .items-table th, .items-table td {
-    border: 1px solid #000;
-    padding: 4px 6px;
-    text-align: left;
-    vertical-align: top;
-  }
-  .items-table th { background: #f0f0f0; font-weight: bold; }
-  .items-table .right { text-align: right; }
-  .items-table .center { text-align: center; }
-  
-  .totals-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 10px;
-  }
-  .totals-table th, .totals-table td {
-    padding: 4px 6px;
-    border: 1px solid #000;
-  }
-  .grand-total {
-    font-size: 15px;
-    font-weight: bold;
-  }
-  
-  .payment-section {
-    text-align: center;
-    border: 1px solid #000;
-    padding: 10px;
-    margin-top: 15px;
-    margin-bottom: 10px;
-  }
-  .qr-image { width: 120px; height: 120px; margin-top: 5px; }
-  
-  .footer { 
-    text-align: center; 
-    font-size: 11px; 
-    margin-top: 15px; 
-    border-top: 1px solid #000; 
-    padding-top: 10px; 
-  }
-  
-  /* Compact column widths to minimize gap between SN and Item Name */
-  .col-sn { width: 5%; text-align: center; }
-  .col-item { width: 60%; }
-  .col-qty { width: 10%; text-align: right; }
-  .col-rate { width: 10%; text-align: right; }
-  .col-amt { width: 15%; text-align: right; }
+*,*::before,*::after{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  -webkit-user-select:none !important;
+  -moz-user-select:none !important;
+  -ms-user-select:none !important;
+  user-select:none !important;
+  -webkit-touch-callout:none !important;
+}
+html,body{margin:0;padding:0;background:#d8d3cd;}
+body{font-family:'Poppins','Mukta','Noto Sans Devanagari',Arial,sans-serif;color:#222;-webkit-print-color-adjust:exact;print-color-adjust:exact;-webkit-font-smoothing:antialiased;}
 
-  @media print {
-    body { padding: 0; background: none; }
-    .wrapper { border: none; padding: 0; }
+img{
+  -webkit-user-drag:none !important;
+  -moz-user-drag:none !important;
+  user-drag:none !important;
+  pointer-events:auto;
+}
+
+.inv-wrap{max-width:540px;margin:0 auto;background:#fff;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.22);}
+
+/* HEADER IMAGE */
+.inv-header{display:block;width:100%;line-height:0;font-size:0;}
+.inv-header img{width:100%;height:auto;display:block;border:0;vertical-align:bottom;}
+
+/* SALES INVOICE CENTERED BADGE */
+.inv-badge-wrap{display:flex;align-items:center;justify-content:center;gap:10px;padding:6px 12px 2px;background:#fff;}
+.badge-line{flex:1;max-width:45px;height:2px;background:linear-gradient(90deg,transparent,#C9A43B);border-radius:2px;}
+.badge-line.right{background:linear-gradient(90deg,#C9A43B,transparent);}
+.inv-badge{background:linear-gradient(135deg,#3A0209 0%,#6A0817 50%,#3A0209 100%);color:#FFFFFF;border:1.5px solid #C9A43B;border-radius:20px;padding:3.5px 18px;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;box-shadow:0 2px 6px rgba(58,2,9,0.25);display:inline-flex;align-items:center;justify-content:center;}
+
+/* BILL MAIN BOX: CONTINUOUS BLACK BOUNDARY (GHERWA) FROM BILL DETAILS THROUGH ITEMS & SUBTOTALS */
+.bill-main-box{
+  margin:6px 10px 8px;
+  border:1.5px solid #000000;
+  border-radius:6px;
+  overflow:hidden;
+  background:#ffffff;
+  box-shadow:0 2px 8px rgba(0,0,0,0.10);
+}
+
+/* BILL DETAILS ROW: BILL TO & INVOICE DETAILS */
+.bill-details-grid{
+  display:grid;
+  grid-template-columns:1.16fr 0.84fr;
+  border-bottom:1.5px solid #000000;
+  background:#FAF8F5;
+}
+.bill-details-col{
+  display:flex;
+  flex-direction:column;
+}
+.bill-to-col{
+  border-right:1.5px solid #000000;
+}
+.sec-hdr{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  padding:4.5px 8px;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:0.5px;
+  text-transform:uppercase;
+  color:#FFFFFF;
+  background:linear-gradient(135deg,#3A0209 0%,#660816 100%);
+  border-bottom:1px solid #000000;
+}
+.sec-hdr svg{width:12px;height:12px;stroke:#E5C365;flex-shrink:0;}
+
+.sec-body{padding:6px 8px;font-size:11px;line-height:1.4;flex:1;}
+.party-name{font-family:'Mukta','Poppins',sans-serif;font-weight:700;font-size:12px;color:#3A0209;margin-bottom:2px;word-break:break-word;line-height:1.3;}
+.party-sub{font-size:10.5px;color:#555;display:flex;align-items:center;gap:4px;}
+.party-sub svg{width:11px;height:11px;stroke:#8B0000;flex-shrink:0;}
+.party-addr{font-size:9.5px;color:#666;line-height:1.3;margin-top:2px;}
+
+.d-row{display:flex;align-items:baseline;font-size:11px;margin-bottom:2px;color:#333;}
+.d-row:last-child{margin-bottom:0;}
+.d-row .dl{font-weight:600;min-width:46px;color:#555;flex-shrink:0;font-size:10.5px;}
+.d-row .ds{margin:0 4px;color:#3A0209;flex-shrink:0;font-weight:700;}
+.d-row .dv{flex:1;font-weight:600;color:#1A1A1A;word-break:break-word;}
+
+/* ITEMS TABLE: FULL BLACK GRID (PURA BOUNTRY) */
+.inv-tbl{width:100%;border-collapse:collapse;background:#ffffff;}
+.inv-tbl thead tr{background:linear-gradient(135deg,#360208 0%,#5E0714 50%,#360208 100%);}
+.inv-tbl th{
+  padding:6.5px 7px;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:0.4px;
+  color:#FFFFFF;
+  text-transform:uppercase;
+  text-align:left;
+  border-right:1px solid #000000;
+  border-bottom:1.5px solid #000000;
+}
+.inv-tbl th:last-child{border-right:none;}
+.inv-tbl th.tc{text-align:center;width:32px;}
+.inv-tbl th.tc-qty{text-align:center;width:66px;}
+.inv-tbl th.tr{text-align:right;}
+.inv-tbl th.tr-rate{width:72px;}
+.inv-tbl th.tr-amt{width:82px;}
+
+.inv-tbl tbody tr{border-bottom:1px solid #000000;}
+.inv-tbl tbody tr:nth-child(odd){background:#FFFFFF;}
+.inv-tbl tbody tr:nth-child(even){background:#F9F8F6;}
+.inv-tbl td{
+  padding:7px 7px;
+  font-size:11.5px;
+  border-right:1px solid #000000;
+  vertical-align:middle;
+  color:#000000;
+}
+.inv-tbl td:last-child{border-right:none;}
+.inv-tbl td.tc{text-align:center;color:#000000;font-size:11px;font-weight:700;}
+.inv-tbl td.tc-qty{text-align:center;}
+.inv-tbl td.tr{text-align:right;}
+
+/* BEST VIEW HINDI FONT & PROPER LABELS (ALL ITEM TEXT BLACK) */
+.iname{font-family:'Mukta','Noto Sans Devanagari',sans-serif;font-weight:700;font-size:12.5px;color:#000000;line-height:1.35;letter-spacing:0.2px;}
+.qty-stack{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.25;}
+.qty-num{font-weight:700;font-size:12.5px;color:#000000;}
+.qty-unit{font-family:'Mukta','Noto Sans Devanagari',sans-serif;font-size:10px;color:#000000;font-weight:600;margin-top:1px;}
+.rate-val{font-weight:600;font-size:11.5px;color:#000000;}
+.amt-val{font-weight:700;font-size:12.5px;color:#000000;}
+
+/* INTEGRATED SUBTOTALS INSIDE THE GHERWA (CRISP BLACK TEXT) */
+.inv-tfoot{background:#FAF8F5;border-top:1.5px solid #000000;}
+.inv-tfoot tr.sub-row{border-bottom:1px solid #000000;}
+.inv-tfoot tr.sub-row:last-child{border-bottom:none;}
+.inv-tfoot td.sl-td{
+  text-align:right;
+  padding:4.5px 9px;
+  font-size:11px;
+  font-weight:700;
+  color:#000000;
+  border-right:1px solid #000000;
+}
+.inv-tfoot td.sa-td{
+  text-align:right;
+  padding:4.5px 7px;
+  font-size:11.5px;
+  font-weight:700;
+  color:#000000;
+}
+.inv-tfoot tr.s-muted td.sl-td{color:#000000;font-weight:600;font-size:10.5px;}
+.inv-tfoot tr.s-muted td.sa-td{color:#000000;font-weight:600;font-size:11px;}
+
+/* LUXURY MAROON GRADIENT TOTAL BAR (WITH BLACK BORDER) */
+.tot-bar{margin:7px 10px 9px;background:linear-gradient(135deg,#2B0107 0%,#560613 50%,#340108 100%);border:1.5px solid #000000;border-radius:6px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;box-shadow:0 2px 6px rgba(0,0,0,0.15);}
+.tot-left{display:flex;align-items:center;gap:8px;}
+.tot-icon{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#C9A43B,#F3E08A);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+.tot-icon svg{width:13px;height:13px;fill:#3A0209;}
+.tot-lbl-t{font-size:11px;font-weight:700;color:#FFFFFF;letter-spacing:0.6px;text-transform:uppercase;}
+.tot-amt{font-size:20px;font-weight:800;color:#F8D675;white-space:nowrap;letter-spacing:-0.3px;text-shadow:0 1px 3px rgba(0,0,0,0.5);}
+
+/* REWARD POINTS BOX */
+.pts-box{margin:4px 10px 8px;border:1px solid #C9A43B;border-radius:6px;padding:7px 10px;background:#FDFBF7;}
+.pts-title{font-weight:700;font-size:10.5px;color:#3A0209;margin-bottom:4px;letter-spacing:0.3px;}
+.pts-row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;color:#444;}
+.pts-row span:last-child{font-weight:600;}
+.pts-hr{border:none;border-top:1px dashed #D2C4B7;margin:4px 0;}
+
+/* ==========================================================================
+   PURE HTML/CSS CODED LUXURY FOOTER (QR & BUTTONS SIDE-BY-SIDE)
+   ========================================================================== */
+.inv-footer-coded {
+  display: block;
+  width: 100%;
+  background: #FFFFFF;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* 1. MASTER HERO CARD: COMPACT STRIP + (QR & BUTTONS SIDE-BY-SIDE) */
+.footer-hero-card {
+  margin: 8px 10px 8px;
+  padding: 7px 9px 8px;
+  background: linear-gradient(145deg, #FFFFFF 0%, #FDFBF7 60%, #F7F1E6 100%);
+  border: 1.5px solid #C9A43B;
+  border-radius: 8px;
+  box-shadow: 0 2px 7px rgba(58, 2, 9, 0.08);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* SLEEK TOP THANK YOU & SLOGAN STRIP */
+.thankyou-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding-bottom: 6px;
+  margin-bottom: 7px;
+  border-bottom: 1px dashed rgba(201, 164, 59, 0.5);
+  text-align: center;
+  flex-wrap: wrap;
+}
+.ty-text {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #260105;
+}
+.ty-sep {
+  color: #C9A43B;
+  font-size: 8px;
+}
+.ty-slogan {
+  font-family: 'Poppins', sans-serif;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: #8C1D2A;
+}
+
+/* SIDE-BY-SIDE CONTAINER */
+.qr-buttons-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* LEFT: UPI QR BOX */
+.upi-qr-col {
+  flex: 0 0 138px;
+  width: 138px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.upi-qr-box {
+  width: 138px;
+  height: 100%;
+  background: #FFFFFF;
+  border: 1.5px solid #3A0209;
+  border-radius: 7px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.10);
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.upi-qr-box:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(58,2,9,0.20);
+}
+
+.upi-header {
+  background: linear-gradient(135deg, #3A0209 0%, #6A0817 100%);
+  color: #FFFFFF;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-align: center;
+  padding: 3px 4px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.upi-header svg {
+  width: 10px;
+  height: 10px;
+  fill: #F8D675;
+}
+
+.upi-qr-img {
+  width: 105px;
+  height: 105px;
+  margin: 3px auto 2px;
+  display: block;
+  border: 0;
+}
+
+.upi-id-badge {
+  font-size: 8px;
+  font-weight: 700;
+  color: #3A0209;
+  background: #FDF4DE;
+  border-top: 1px dashed #C9A43B;
+  padding: 3px 4px;
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: 0.1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.upi-id-badge svg {
+  width: 10px;
+  height: 10px;
+  stroke: #3A0209;
+  flex-shrink: 0;
+}
+
+/* RIGHT: COMPACT BUTTONS LIST (NEXT TO QR) */
+.footer-buttons-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4.5px;
+  overflow: hidden;
+}
+
+.btn-action-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4.5px 8px;
+  border-radius: 5.5px;
+  text-decoration: none;
+  font-family: 'Poppins', sans-serif;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.10);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+  cursor: pointer;
+  height: 27px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.btn-action-tile:hover {
+  transform: translateX(1.5px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.16);
+  filter: brightness(1.05);
+}
+.btn-action-tile:active {
+  transform: scale(0.99);
+  filter: brightness(0.95);
+}
+
+.btn-content-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.btn-icon-box {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.btn-icon-box svg {
+  width: 13px;
+  height: 13px;
+}
+
+.btn-text-main {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+.btn-chevron {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  margin-left: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+.btn-chevron svg {
+  width: 11px;
+  height: 11px;
+  display: block;
+}
+
+/* WhatsApp Button */
+.btn-whatsapp {
+  background: linear-gradient(135deg, #22C55E 0%, #15803D 100%);
+  color: #FFFFFF;
+}
+.btn-whatsapp .btn-icon-box {
+  background: rgba(255,255,255,0.22);
+}
+.btn-whatsapp svg {
+  fill: #FFFFFF;
+}
+
+/* Instagram Button */
+.btn-instagram {
+  background: linear-gradient(135deg, #833AB4 0%, #E1306C 50%, #F56040 100%);
+  color: #FFFFFF;
+}
+.btn-instagram .btn-icon-box {
+  background: rgba(255,255,255,0.22);
+}
+.btn-instagram svg {
+  fill: #FFFFFF;
+}
+
+/* App Button */
+.btn-app {
+  background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+  color: #FFFFFF;
+}
+.btn-app .btn-icon-box {
+  background: rgba(255,255,255,0.22);
+}
+.btn-app svg {
+  fill: #FFFFFF;
+}
+
+/* Google Review Button */
+.btn-google {
+  background: #FFFFFF;
+  color: #1F2937;
+  border: 1px solid #D1D5DB;
+}
+.btn-google .btn-text-main {
+  color: #1E40AF;
+}
+.btn-google .btn-chevron svg {
+  stroke: #1E40AF;
+}
+.btn-stars {
+  color: #F59E0B;
+  font-size: 9.5px;
+  letter-spacing: 0.5px;
+  margin-left: 2px;
+}
+
+/* Website Button */
+.btn-website {
+  background: linear-gradient(135deg, #3A0209 0%, #5E0714 50%, #2A0105 100%);
+  color: #FFFFFF;
+  border: 1px solid #C9A43B;
+}
+.btn-website .btn-icon-box {
+  background: rgba(201, 164, 59, 0.25);
+}
+.btn-website svg {
+  fill: #F8D675;
+}
+.btn-website .btn-chevron svg {
+  stroke: #F8D675;
+}
+
+/* 2. CONTACT & ADDRESS BANNER (CENTERED, COMPACT & SPACE-SAVING) */
+.footer-contact-banner {
+  background: linear-gradient(180deg, #2B0106 0%, #150003 100%);
+  border-top: 2px solid #C9A43B;
+  padding: 8px 12px 9px;
+  color: #FFFFFF;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3.5px;
+}
+
+.contact-phones-centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.contact-phone-icon, .contact-addr-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.contact-phone-icon svg, .contact-addr-icon svg {
+  width: 12px;
+  height: 12px;
+  fill: #F5D060;
+  display: block;
+}
+
+.phone-link {
+  color: #F8D675;
+  text-decoration: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  transition: color 0.15s ease;
+}
+.phone-link:hover {
+  color: #FFFFFF;
+  text-decoration: underline;
+}
+
+.phone-sep {
+  color: #C9A43B;
+  font-size: 8px;
+  opacity: 0.85;
+}
+
+.phones-sub {
+  font-size: 8px;
+  color: #C5CBD3;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-top: -1px;
+}
+
+.contact-address-centered {
+  text-align: center;
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(201, 164, 59, 0.35);
+  width: 100%;
+  max-width: 480px;
+}
+
+.contact-addr-icon {
+  display: inline-block;
+  vertical-align: -1.5px;
+  margin-right: 3px;
+}
+.contact-addr-icon svg {
+  width: 11px;
+  height: 11px;
+  fill: #F5D060;
+  display: inline-block;
+}
+
+.address-link {
+  color: #E5E7EB;
+  text-decoration: none;
+  font-size: 9.5px;
+  line-height: 1.35;
+  font-weight: 500;
+  text-align: center;
+  transition: color 0.15s ease;
+  display: inline;
+}
+.address-link:hover {
+  color: #F8D675;
+}
+
+/* GOLD LINE */
+/* GOLD LINE */
+/* GOLD LINE */
+/* GOLD LINE */
+/* GOLD LINE */
+.gold-line{height:4px;background:linear-gradient(90deg,#3A0209,#9A7B1A,#D4AF37,#F5D060,#D4AF37,#9A7B1A,#3A0209);}
+
+
+/* RESPONSIVE DESIGN FOR MOBILE SCREENS (FIX BUTTONS OVERFLOW) */
+@media (max-width: 480px) {
+  .inv-wrap {
+    width: 100%;
+    box-shadow: none;
   }
+  .bill-main-box {
+    margin: 4px 6px 6px;
+  }
+  .footer-hero-card {
+    margin: 6px 6px 7px;
+    padding: 6px 7px 7px;
+  }
+  .thankyou-strip {
+    gap: 4px;
+    padding-bottom: 4px;
+    margin-bottom: 5px;
+    flex-wrap: wrap;
+  }
+  .ty-text {
+    font-size: 11px;
+  }
+  .ty-sep {
+    font-size: 7px;
+  }
+  .ty-slogan {
+    font-size: 7px;
+    letter-spacing: 0.4px;
+  }
+  .qr-buttons-row {
+    gap: 6px;
+  }
+  .upi-qr-col {
+    flex: 0 0 110px;
+    width: 110px;
+  }
+  .upi-qr-box {
+    width: 110px;
+    border-radius: 6px;
+  }
+  .upi-header {
+    font-size: 8px;
+    padding: 2.5px 3px;
+    letter-spacing: 0.3px;
+  }
+  .upi-header svg {
+    width: 8px;
+    height: 8px;
+  }
+  .upi-qr-img {
+    width: 84px;
+    height: 84px;
+    margin: 2px auto;
+  }
+  .upi-id-badge {
+    font-size: 6.8px;
+    padding: 2px 2px;
+    letter-spacing: 0;
+    gap: 2px;
+  }
+  .upi-id-badge svg {
+    width: 8px;
+    height: 8px;
+  }
+  .footer-buttons-col {
+    gap: 3.5px;
+  }
+  .btn-action-tile {
+    height: 24px;
+    padding: 3px 6px;
+    border-radius: 4px;
+  }
+  .btn-content-left {
+    gap: 4.5px;
+  }
+  .btn-icon-box {
+    width: 15px;
+    height: 15px;
+    border-radius: 3px;
+  }
+  .btn-icon-box svg {
+    width: 10px;
+    height: 10px;
+  }
+  .btn-text-main {
+    font-size: 8.8px;
+    letter-spacing: 0;
+  }
+  .btn-stars {
+    font-size: 8px;
+    letter-spacing: 0.2px;
+  }
+  .btn-chevron {
+    width: 11px;
+    height: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 2px;
+    line-height: 0;
+  }
+  .btn-chevron svg {
+    width: 9.5px;
+    height: 9.5px;
+    display: block;
+  }
+  .footer-contact-banner {
+    padding: 6px 8px 7px;
+    gap: 2.5px;
+  }
+  .contact-phone-icon svg, .contact-addr-icon svg {
+    width: 10px;
+    height: 10px;
+  }
+  .phone-link {
+    font-size: 10.5px;
+  }
+  .phone-sep {
+    font-size: 7px;
+  }
+  .phones-sub {
+    font-size: 7.5px;
+  }
+  .contact-address-centered {
+    padding-top: 3px;
+    gap: 4px;
+  }
+  .address-link {
+    font-size: 8.5px;
+    line-height: 1.25;
+  }
+}
+
+@media (max-width: 360px) {
+  .footer-hero-card {
+    margin: 4px 4px 5px;
+    padding: 5px 4px 5px;
+  }
+  .qr-buttons-row {
+    gap: 4px;
+  }
+  .upi-qr-col {
+    flex: 0 0 96px;
+    width: 96px;
+  }
+  .upi-qr-box {
+    width: 96px;
+  }
+  .upi-qr-img {
+    width: 72px;
+    height: 72px;
+    margin: 1px auto;
+  }
+  .upi-header {
+    font-size: 7px;
+    padding: 2px;
+  }
+  .upi-id-badge {
+    font-size: 6.2px;
+  }
+  .btn-action-tile {
+    height: 22px;
+    padding: 2px 4px;
+  }
+  .btn-icon-box {
+    width: 13px;
+    height: 13px;
+  }
+  .btn-icon-box svg {
+    width: 9px;
+    height: 9px;
+  }
+  .btn-text-main {
+    font-size: 8px;
+  }
+  .btn-chevron {
+    width: 9px;
+    height: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 1px;
+    line-height: 0;
+  }
+  .btn-chevron svg {
+    width: 8px;
+    height: 8px;
+    display: block;
+  }
+  .footer-contact-banner {
+    padding: 5px 6px 6px;
+    gap: 2px;
+  }
+  .phone-link {
+    font-size: 9.5px;
+  }
+  .phones-sub {
+    font-size: 7px;
+  }
+  .address-link {
+    font-size: 8px;
+    line-height: 1.2;
+  }
+}
+
+@media print{body{background:#fff;}.inv-wrap{box-shadow:none;max-width:100%;}}
 </style>
 </head>
-<body>
-<div class="wrapper">
+<body oncontextmenu="return false;">
 
-  <div class="header">
-    <div class="company-name">{{ company.name }}</div>
-    {% if company.name_hi %}<div class="company-name-hi">{{ company.name_hi }}</div>{% endif %}
-    <div class="company-meta">
-      {{ company.address }}<br>
-      Ph: {{ company.phone1 }}{% if company.phone2 %}, {{ company.phone2 }}{% endif %}
-    </div>
+<div class="inv-wrap">
+
+  <!-- HEADER IMAGE -->
+  <div class="inv-header">
+    <img src="data:image/jpeg;base64,{{ header_b64 }}" alt="Gopal Marketing Ambikapur" class="header-banner-img" />
   </div>
 
-  <div class="info-section">
-    <div class="party-info">
-      <div><strong>M/s: {{ party_name }}</strong></div>
-      {% if address %}<div>Address: {{ address }}</div>{% endif %}
-      {% if mobile %}<div>Mobile: {{ mobile }}</div>{% endif %}
-    </div>
-    
-    <div class="bill-info">
-      <div><strong>Bill No:</strong> {{ vno }}</div>
-      <div><strong>Date:</strong> {{ date }}</div>
-    </div>
+  <!-- SALES INVOICE CENTERED BADGE -->
+  <div class="inv-badge-wrap">
+    <div class="badge-line"></div>
+    <div class="inv-badge">SALES INVOICE</div>
+    <div class="badge-line right"></div>
   </div>
 
-  <table class="items-table">
-    <thead>
-      <tr>
-        <th class="col-sn">S.No.</th>
-        <th class="col-item">Item Name</th>
-        <th class="col-qty">Qty</th>
-        <th class="col-rate">Rate</th>
-        <th class="col-amt">Amount</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in items %}
-      <tr>
-        <td class="col-sn">{{ item.sr_no }}</td>
-        <td class="col-item">{{ item.name }}</td>
-        <td class="col-qty">{{ item.qty }} {{ item.unit }}</td>
-        <td class="col-rate">{{ item.price }}</td>
-        <td class="col-amt">{{ item.amount }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <!-- BILL MAIN BOX: BLACK BOUNDARY (GHERWA) FROM BILL DETAILS THROUGH ITEMS & SUBTOTALS -->
+  <div class="bill-main-box">
+    <!-- BILL DETAILS: BILL TO & INVOICE DETAILS -->
+    <div class="bill-details-grid">
+      <!-- BILL TO -->
+      <div class="bill-details-col bill-to-col">
+        <div class="sec-hdr">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Bill To</span>
+        </div>
+        <div class="sec-body">
+          <div class="party-name">{{ party_name }}</div>
+          {% if mobile %}
+          <div class="party-sub">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>{{ mobile }}</span>
+          </div>
+          {% endif %}
+          {% if address %}
+          <div class="party-addr">{{ address }}</div>
+          {% endif %}
+        </div>
+      </div>
 
-  <table class="totals-table">
-    <tr>
-      <td style="text-align: right;"><strong>Sub Total</strong></td>
-      <td class="col-amt"><strong>{{ item_total }}</strong></td>
-    </tr>
-    {% if cgst_total %}
-    <tr>
-      <td style="text-align: right;">CGST</td>
-      <td class="col-amt">{{ cgst_total }}</td>
-    </tr>
-    {% endif %}
-    {% if sgst_total %}
-    <tr>
-      <td style="text-align: right;">SGST</td>
-      <td class="col-amt">{{ sgst_total }}</td>
-    </tr>
-    {% endif %}
-    {% if igst_total %}
-    <tr>
-      <td style="text-align: right;">IGST</td>
-      <td class="col-amt">{{ igst_total }}</td>
-    </tr>
-    {% endif %}
-    {% for s in other_sundries %}
-    <tr>
-      <td style="text-align: right;">{{ s.name }}</td>
-      <td class="col-amt">{% if s.is_deduction %}− {% endif %}{{ s.amount }}</td>
-    </tr>
-    {% endfor %}
-    <tr class="grand-total">
-      <td style="text-align: right;">Total Amount Payable <small>(Total Qty: {{ total_qty }})</small></td>
-      <td class="col-amt">{{ grand_total }}</td>
-    </tr>
-  </table>
+      <!-- INVOICE DETAILS -->
+      <div class="bill-details-col invoice-info-col">
+        <div class="sec-hdr">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Invoice Details</span>
+        </div>
+        <div class="sec-body">
+          <div class="d-row">
+            <span class="dl">Bill No</span><span class="ds">:</span>
+            <span class="dv">{{ vno }}</span>
+          </div>
+          <div class="d-row">
+            <span class="dl">Date</span><span class="ds">:</span>
+            <span class="dv">{{ date }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  {% if grand_total_raw and grand_total_raw > 0 %}
-  <div class="payment-section">
-    <strong>Pay via UPI</strong><br>
-    <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=upi://pay?pa=gopalmarketing@ybl%26pn=GOPAL%20MARKETING%26am={{ '%.2f'|format(grand_total_raw) }}%26cu=INR" alt="UPI QR Code" class="qr-image"><br>
-    UPI ID: gopalmarketing@ybl
+    <!-- ITEMS TABLE WITH FULL BLACK GRID -->
+    <table class="inv-tbl">
+      <thead>
+        <tr>
+          <th class="tc">#</th>
+          <th>Item Description</th>
+          <th class="tc-qty">Qty</th>
+          <th class="tr tr-rate">Rate</th>
+          <th class="tr tr-amt">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td class="tc">{{ item.sr_no }}.</td>
+          <td><span class="iname">{{ item.name }}</span></td>
+          <td class="tc-qty">
+            <div class="qty-stack">
+              <span class="qty-num">{{ item.qty }}</span>
+              {% if item.unit %}<span class="qty-unit">{{ item.unit }}</span>{% endif %}
+            </div>
+          </td>
+          <td class="tr"><span class="rate-val">{{ item.price|replace("₹", "")|trim }}</span></td>
+          <td class="tr"><span class="amt-val">{{ item.amount|replace("₹", "")|trim }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <!-- INTEGRATED SUBTOTALS INSIDE GHERWA -->
+      <tfoot class="inv-tfoot">
+        <tr class="sub-row">
+          <td colspan="4" class="sl-td">Sub Total:</td>
+          <td class="sa-td">{{ item_total|replace("₹", "")|trim }}</td>
+        </tr>
+        {% for s in other_sundries %}
+        <tr class="sub-row s-muted">
+          <td colspan="4" class="sl-td">{{ s.name }}:</td>
+          <td class="sa-td">{% if s.is_deduction %}-{% endif %}{{ s.amount|replace("₹", "")|trim }}</td>
+        </tr>
+        {% endfor %}
+        {% if cgst_total %}
+        <tr class="sub-row s-muted">
+          <td colspan="4" class="sl-td">CGST:</td>
+          <td class="sa-td">{{ cgst_total|replace("₹", "")|trim }}</td>
+        </tr>
+        {% endif %}
+        {% if sgst_total %}
+        <tr class="sub-row s-muted">
+          <td colspan="4" class="sl-td">SGST:</td>
+          <td class="sa-td">{{ sgst_total|replace("₹", "")|trim }}</td>
+        </tr>
+        {% endif %}
+        {% if igst_total %}
+        <tr class="sub-row s-muted">
+          <td colspan="4" class="sl-td">IGST:</td>
+          <td class="sa-td">{{ igst_total|replace("₹", "")|trim }}</td>
+        </tr>
+        {% endif %}
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- LUXURY MAROON & GOLD TOTAL BAR -->
+  <div class="tot-bar">
+    <div class="tot-left">
+      <div class="tot-icon">
+        <svg viewBox="0 0 24 24"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.65-.5-.65C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76V14h2V8.76L15.38 12 17 10.83 14.92 8H20v6z"/></svg>
+      </div>
+      <div class="tot-lbl-t">Total Amount Payable</div>
+    </div>
+    <div class="tot-amt">₹&nbsp;{{ grand_total|replace("₹", "")|trim }}</div>
+  </div>
+
+  <!-- LOYALTY REWARD POINTS -->
+  {% if points_earned or points_opening or points_redeemed or total_points %}
+  <div class="pts-box">
+    <div class="pts-title">&#9733; Loyalty Reward Points Summary</div>
+    <div class="pts-row"><span>Opening Points Balance:</span><span>{{ "%.2f"|format(points_opening) }}</span></div>
+    {% if points_earned and points_earned > 0 %}
+    <div class="pts-row"><span>Points Earned on this Invoice:</span><span style="color:#2E7D32;">+{{ "%.2f"|format(points_earned) }}</span></div>
+    {% endif %}
+    {% if points_redeemed and points_redeemed > 0 %}
+    <div class="pts-row"><span>Points Redeemed:</span><span style="color:#C62828;">-{{ "%.2f"|format(points_redeemed) }}</span></div>
+    {% endif %}
+    <hr class="pts-hr">
+    <div class="pts-row" style="font-weight:700;font-size:10.5px;color:#3A0209;"><span>Net Total Reward Points:</span><span>{{ "%.2f"|format(total_points) }} Pts</span></div>
   </div>
   {% endif %}
 
-  <div class="footer">
-    Thank you for your business!<br>
-    This is a computer-generated invoice.
+  
+  <!-- FOOTER IMAGE WITH CLICKABLE OVERLAYS -->
+  <!-- ==========================================================================
+       PURE HTML/CSS CODED FOOTER
+       ========================================================================== -->
+  <!-- ==========================================================================
+       PURE HTML/CSS CODED FOOTER
+       ========================================================================== -->
+  <!-- ==========================================================================
+       PURE HTML/CSS CODED FOOTER (COMPACT)
+       ========================================================================== -->
+  <!-- ==========================================================================
+       PURE HTML/CSS CODED FOOTER (QR & BUTTONS SIDE-BY-SIDE)
+       ========================================================================== -->
+  <div class="inv-footer-coded">
+
+    <!-- MASTER CARD: (THANK YOU STRIP) + (QR ON LEFT & BUTTONS ON RIGHT) -->
+    <div class="footer-hero-card">
+
+      <!-- TOP: THANK YOU FOR YOUR BUSINESS STRIP -->
+      <div class="thankyou-strip">
+        <span class="ty-text">Thank you for your business!</span>
+        <span class="ty-sep">✦</span>
+        <span class="ty-slogan">YOUR TRUST • OUR STRENGTH • GROW TOGETHER</span>
+      </div>
+
+      <!-- SIDE-BY-SIDE ROW: QR ON LEFT, 5 BUTTONS ON RIGHT -->
+      <div class="qr-buttons-row">
+
+        <!-- LEFT: UPI QR Code Box -->
+        <div class="upi-qr-col">
+          <a href="upi://pay?pa=gopalmarketing@ybl&pn=Gopal%20Marketing{% if grand_total_raw %}&am={{ '%.2f'|format(grand_total_raw) }}{% endif %}&cu=INR" class="upi-qr-box" title="Click to Pay via UPI App">
+            <div class="upi-header">
+              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+              Pay via UPI
+            </div>
+            <img src="{% if upi_qr_b64 %}data:image/png;base64,{{ upi_qr_b64 }}{% else %}https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=upi://pay?pa=gopalmarketing@ybl%26pn=Gopal%20Marketing{% if grand_total_raw %}%26am={{ '%.2f'|format(grand_total_raw) }}{% endif %}%26cu=INR{% endif %}" alt="UPI QR Code" class="upi-qr-img" />
+            <div class="upi-id-badge" onclick="event.preventDefault();navigator.clipboard.writeText('gopalmarketing@ybl');alert('UPI ID Copied: gopalmarketing@ybl');" title="Click to Copy UPI ID">
+              <span>UPI: gopalmarketing@ybl</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </div>
+          </a>
+        </div>
+
+        <!-- RIGHT: 5 COMPACT ACTION BUTTONS (NEXT TO QR) -->
+        <div class="footer-buttons-col">
+
+          <!-- Button 1: WhatsApp Community -->
+          <a href="https://wa.me/919977414177?text=Hello%20Gopal%20Marketing%2C%20I%20want%20to%20join%20your%20WhatsApp%20Community" target="_blank" rel="noopener" class="btn-action-tile btn-whatsapp" title="Join our WhatsApp Community">
+            <div class="btn-content-left">
+              <div class="btn-icon-box">
+                <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm5.79 14.07c-.24.68-1.4 1.25-1.92 1.33-.51.08-1.18.11-3.41-.8-2.85-1.17-4.69-4.09-4.83-4.28-.14-.19-1.16-1.54-1.16-2.94 0-1.4.73-2.09.99-2.37.26-.28.57-.35.76-.35.19 0 .38 0 .54.01.17.01.4.06.61.57.24.57.81 1.98.88 2.12.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.17-.3.37-.43.5-.14.14-.29.3-.12.59.17.29.74 1.22 1.59 1.97 1.09.97 2.01 1.27 2.3 1.41.29.14.45.12.62-.07.17-.19.73-.85.92-1.14.19-.29.38-.24.64-.14.26.1 1.64.77 1.92.91.28.14.47.21.54.33.07.12.07.7-.17 1.38z"/></svg>
+              </div>
+              <div class="btn-text-main">WhatsApp Community</div>
+            </div>
+            <div class="btn-chevron">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </a>
+
+          <!-- Button 2: Instagram -->
+          <a href="https://www.instagram.com/gopalmarketing.in/" target="_blank" rel="noopener" class="btn-action-tile btn-instagram" title="Follow on Instagram @gopalmarketing.in">
+            <div class="btn-content-left">
+              <div class="btn-icon-box">
+                <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              </div>
+              <div class="btn-text-main">Instagram @gopalmarketing.in</div>
+            </div>
+            <div class="btn-chevron">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </a>
+
+          <!-- Button 3: Download App -->
+          <a href="https://play.google.com/store/apps/details?id=com.gopalmarketing" target="_blank" rel="noopener" class="btn-action-tile btn-app" title="Download Our B2B Wholesale Store App">
+            <div class="btn-content-left">
+              <div class="btn-icon-box">
+                <svg viewBox="0 0 24 24"><path d="M3.609 1.814L13.792 12 3.61 22.186a1.986 1.986 0 0 1-.61-1.428V3.242c0-.555.228-1.057.609-1.428zm11.238 11.241l2.308 2.309-10.74 6.202 8.432-8.511zm0-2.11L6.415 2.434l10.74 6.202-2.308 2.309zm1.758 1.055l3.856 2.226c.717.414.717 1.089 0 1.503l-3.856 2.227-2.456-2.456 2.456-2.5z"/></svg>
+              </div>
+              <div class="btn-text-main">Download B2B Store App</div>
+            </div>
+            <div class="btn-chevron">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </a>
+
+          <!-- Button 4: Google Review -->
+          <a href="https://www.google.com/search?q=gopal+marketing+ambikapur" target="_blank" rel="noopener" class="btn-action-tile btn-google" title="Review us on Google">
+            <div class="btn-content-left">
+              <div class="btn-icon-box">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
+                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.14-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                </svg>
+              </div>
+              <div class="btn-text-main">Review on Google <span class="btn-stars">★★★★★</span></div>
+            </div>
+            <div class="btn-chevron">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </a>
+
+          <!-- Button 5: Website -->
+          <a href="https://www.gopalmarketing.in" target="_blank" rel="noopener" class="btn-action-tile btn-website" title="Visit Our Website www.gopalmarketing.in">
+            <div class="btn-content-left">
+              <div class="btn-icon-box">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+              </div>
+              <div class="btn-text-main">Visit Our Website</div>
+            </div>
+            <div class="btn-chevron">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </a>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- 2. CONTACT & ADDRESS BANNER (CENTERED, COMPACT & SPACE-SAVING) -->
+    <div class="footer-contact-banner">
+      <!-- Phones Centered Line -->
+      <div class="contact-phones-centered">
+        <span class="contact-phone-icon">
+          <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+        </span>
+        <a href="tel:{{ company.phone1 }}" class="phone-link">+91 {{ company.phone1 }}</a>
+        {% if company.phone2 %}
+        <span class="phone-sep">✦</span>
+        <a href="tel:{{ company.phone2 }}" class="phone-link">+91 {{ company.phone2 }}</a>
+        {% endif %}
+      </div>
+      <div class="phones-sub">For Orders, Inquiries & Support</div>
+
+      <!-- Address Centered Line -->
+      <div class="contact-address-centered">
+        <span class="contact-addr-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        </span>
+        <a href="https://maps.google.com/?q=Gopal+Marketing+{{ company.address | replace(' ', '+') }}" target="_blank" rel="noopener" class="address-link" title="Open in Google Maps">
+          {{ company.address }}
+        </a>
+      </div>
+    </div>
+
   </div>
 
+  <!-- GOLD BOTTOM LINE -->
+  <div class="gold-line"></div>
+
 </div>
+
+
+<script>
+// Prevent right click (Context Menu)
+document.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+  return false;
+}, { capture: true });
+
+// Prevent text selection, copy, cut, drag
+['copy', 'cut', 'selectstart', 'dragstart'].forEach(function(evt) {
+  document.addEventListener(evt, function(e) {
+    e.preventDefault();
+    return false;
+  }, { capture: true });
+});
+
+// Prevent DevTools & Source view shortcuts (F12, Ctrl+Shift+I/J/C, Ctrl+U, Ctrl+S, Ctrl+C, Ctrl+A)
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'F12' || e.keyCode === 123) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+  var ctrl = e.ctrlKey || e.metaKey;
+  var shift = e.shiftKey;
+  var key = (e.key || '').toLowerCase();
+  var code = e.keyCode;
+
+  if (ctrl && shift && (key === 'i' || key === 'j' || key === 'c' || code === 73 || code === 74 || code === 67)) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+  if (ctrl && (key === 'u' || key === 's' || key === 'c' || key === 'a' || code === 85 || code === 83 || code === 67 || code === 65)) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+}, { capture: true });
+</script>
+
+
 </body>
 </html>

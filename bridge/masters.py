@@ -137,6 +137,8 @@ def get_company_info():
                 "name": val("PrintName") or val("Name"),
                 "address1": val("Address1"),
                 "address2": val("Address2"),
+                "address3": val("Address3"),
+                "address4": val("Address4"),
                 "phone": val("TelNo"),
                 "email": val("Email"),
                 "gstin": val("GSTNo") or val("ITPAN")

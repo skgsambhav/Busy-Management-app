@@ -2013,5 +2013,814 @@
     "5921": {
         "amount": 9390.0,
         "notified_dupes": []
+    },
+    "5924": {
+        "amount": 2316.0,
+        "notified_dupes": []
+    },
+    "5925": {
+        "amount": 540.0,
+        "notified_dupes": []
+    },
+    "5926": {
+        "amount": 7570.0,
+        "notified_dupes": []
+    },
+    "5927": {
+        "amount": 5890.0,
+        "notified_dupes": []
+    },
+    "5928": {
+        "amount": 2940.0,
+        "notified_dupes": []
+    },
+    "5929": {
+        "amount": 2500.0,
+        "notified_dupes": []
+    },
+    "5930": {
+        "amount": 3990.0,
+        "notified_dupes": []
+    },
+    "5931": {
+        "amount": 4440.0,
+        "notified_dupes": []
+    },
+    "5932": {
+        "amount": 570.0,
+        "notified_dupes": []
+    },
+    "5933": {
+        "amount": 5311.0,
+        "notified_dupes": []
+    },
+    "5934": {
+        "amount": 5020.0,
+        "notified_dupes": []
+    },
+    "5935": {
+        "amount": 740.0,
+        "notified_dupes": []
+    },
+    "5936": {
+        "amount": 15132.0,
+        "notified_dupes": []
+    },
+    "5937": {
+        "amount": 33861.0,
+        "notified_dupes": [
+            "KAMARDHANI_160.0",
+            "KANGAN_30.0",
+            "KANGAN_72.0",
+            "TOPS_30.0",
+            "TOPS_36.0"
+        ]
+    },
+    "5938": {
+        "amount": 8280.0,
+        "notified_dupes": []
+    },
+    "5939": {
+        "amount": 1060.0,
+        "notified_dupes": []
+    },
+    "5940": {
+        "amount": 11470.0,
+        "notified_dupes": [
+            "SINDUR_60.0"
+        ]
+    },
+    "5942": {
+        "amount": 3930.0,
+        "notified_dupes": []
+    },
+    "5943": {
+        "amount": 5255.0,
+        "notified_dupes": []
+    },
+    "5952": {
+        "amount": 6754.0,
+        "notified_dupes": []
+    },
+    "5953": {
+        "amount": 6483.0,
+        "notified_dupes": []
+    },
+    "5954": {
+        "amount": 2163.0,
+        "notified_dupes": []
+    },
+    "5955": {
+        "amount": 6320.0,
+        "notified_dupes": []
+    },
+    "5956": {
+        "amount": 5130.0,
+        "notified_dupes": []
+    },
+    "5959": {
+        "amount": 5184.0,
+        "notified_dupes": []
+    },
+    "5960": {
+        "amount": 10640.0,
+        "notified_dupes": []
+    },
+    "5961": {
+        "amount": 4120.0,
+        "notified_dupes": []
+    },
+    "5963": {
+        "amount": 1740.0,
+        "notified_dupes": []
+    },
+    "5964": {
+        "amount": 1891.0,
+        "notified_dupes": []
+    },
+    "5965": {
+        "amount": 3400.0,
+        "notified_dupes": []
+    },
+    "5966": {
+        "amount": 282.0,
+        "notified_dupes": []
+    },
+    "5967": {
+        "amount": 5030.0,
+        "notified_dupes": []
+    },
+    "5968": {
+        "amount": 677.0,
+        "notified_dupes": []
+    },
+    "5969": {
+        "amount": 1851.0,
+        "notified_dupes": []
+    },
+    "5970": {
+        "amount": 6375.0,
+        "notified_dupes": []
+    },
+    "5971": {
+        "amount": 2400.0,
+        "notified_dupes": []
+    },
+    "5972": {
+        "amount": 1950.0,
+        "notified_dupes": []
+    },
+    "5973": {
+        "amount": 4620.0,
+        "notified_dupes": []
+    },
+    "5974": {
+        "amount": 1890.0,
+        "notified_dupes": []
+    },
+    "5975": {
+        "amount": 2926.0,
+        "notified_dupes": []
+    },
+    "5976": {
+        "amount": 3620.0,
+        "notified_dupes": [
+            "PAYAL_30.0"
+        ]
+    },
+    "5977": {
+        "amount": 2700.0,
+        "notified_dupes": []
+    },
+    "5978": {
+        "amount": 4177.0,
+        "notified_dupes": []
+    },
+    "5979": {
+        "amount": 5040.0,
+        "notified_dupes": []
+    },
+    "5980": {
+        "amount": 1530.0,
+        "notified_dupes": []
+    },
+    "5981": {
+        "amount": 2820.0,
+        "notified_dupes": []
+    },
+    "5982": {
+        "amount": 3056.0,
+        "notified_dupes": []
+    },
+    "5983": {
+        "amount": 5830.0,
+        "notified_dupes": []
+    },
+    "5984": {
+        "amount": 7072.0,
+        "notified_dupes": [
+            "TOPS_36.0"
+        ]
+    },
+    "5985": {
+        "amount": 4520.0,
+        "notified_dupes": []
+    },
+    "5986": {
+        "amount": 5561.0,
+        "notified_dupes": []
+    },
+    "5988": {
+        "amount": 1345.0,
+        "notified_dupes": []
+    },
+    "5990": {
+        "amount": 3770.0,
+        "notified_dupes": []
+    },
+    "5991": {
+        "amount": 1666.0,
+        "notified_dupes": []
+    },
+    "5992": {
+        "amount": 29001.0,
+        "notified_dupes": [
+            "KALCHER_84.0",
+            "KANGAN_30.0",
+            "PURSE_72.0"
+        ]
+    },
+    "5993": {
+        "amount": 1484.0,
+        "notified_dupes": []
+    },
+    "5994": {
+        "amount": 2061.0,
+        "notified_dupes": []
+    },
+    "5995": {
+        "amount": 1480.0,
+        "notified_dupes": []
+    },
+    "5996": {
+        "amount": 1180.0,
+        "notified_dupes": []
+    },
+    "5997": {
+        "amount": 946.0,
+        "notified_dupes": []
+    },
+    "6003": {
+        "amount": 8364.0,
+        "notified_dupes": []
+    },
+    "6004": {
+        "amount": 2860.0,
+        "notified_dupes": []
+    },
+    "6005": {
+        "amount": 2980.0,
+        "notified_dupes": []
+    },
+    "6006": {
+        "amount": 1390.0,
+        "notified_dupes": []
+    },
+    "6008": {
+        "amount": 4530.0,
+        "notified_dupes": []
+    },
+    "6009": {
+        "amount": 1871.0,
+        "notified_dupes": []
+    },
+    "6010": {
+        "amount": 8130.0,
+        "notified_dupes": [
+            "BRACELET_36.0",
+            "KANGAN_30.0"
+        ]
+    },
+    "6011": {
+        "amount": 4740.0,
+        "notified_dupes": []
+    },
+    "6012": {
+        "amount": 7530.0,
+        "notified_dupes": []
+    },
+    "6013": {
+        "amount": 10891.0,
+        "notified_dupes": []
+    },
+    "6014": {
+        "amount": 2280.0,
+        "notified_dupes": []
+    },
+    "6015": {
+        "amount": 7760.0,
+        "notified_dupes": []
+    },
+    "6016": {
+        "amount": 1370.0,
+        "notified_dupes": []
+    },
+    "6017": {
+        "amount": 1640.0,
+        "notified_dupes": []
+    },
+    "6018": {
+        "amount": 9841.0,
+        "notified_dupes": []
+    },
+    "6021": {
+        "amount": 3380.0,
+        "notified_dupes": []
+    },
+    "6022": {
+        "amount": 25480.0,
+        "notified_dupes": []
+    },
+    "6023": {
+        "amount": 6415.0,
+        "notified_dupes": [
+            "MS_36.0",
+            "MS_60.0"
+        ]
+    },
+    "6024": {
+        "amount": 7280.0,
+        "notified_dupes": []
+    },
+    "6025": {
+        "amount": 11304.0,
+        "notified_dupes": []
+    },
+    "6026": {
+        "amount": 2230.0,
+        "notified_dupes": []
+    },
+    "6027": {
+        "amount": 2500.0,
+        "notified_dupes": []
+    },
+    "6028": {
+        "amount": 7860.0,
+        "notified_dupes": []
+    },
+    "6029": {
+        "amount": 2384.0,
+        "notified_dupes": []
+    },
+    "6030": {
+        "amount": 7011.0,
+        "notified_dupes": [
+            "RUBBER_30.0"
+        ]
+    },
+    "6031": {
+        "amount": 1670.0,
+        "notified_dupes": []
+    },
+    "6032": {
+        "amount": 1780.0,
+        "notified_dupes": []
+    },
+    "6033": {
+        "amount": 5041.0,
+        "notified_dupes": []
+    },
+    "6034": {
+        "amount": 200.0,
+        "notified_dupes": []
+    },
+    "6035": {
+        "amount": 5300.0,
+        "notified_dupes": [
+            "KANGAN_66.0"
+        ]
+    },
+    "6036": {
+        "amount": 2060.0,
+        "notified_dupes": []
+    },
+    "6037": {
+        "amount": 1550.0,
+        "notified_dupes": []
+    },
+    "6041": {
+        "amount": 1269.0,
+        "notified_dupes": []
+    },
+    "6042": {
+        "amount": 8634.0,
+        "notified_dupes": []
+    },
+    "6043": {
+        "amount": 1950.0,
+        "notified_dupes": []
+    },
+    "6045": {
+        "amount": 30623.0,
+        "notified_dupes": []
+    },
+    "6046": {
+        "amount": 2190.0,
+        "notified_dupes": []
+    },
+    "6047": {
+        "amount": 3598.0,
+        "notified_dupes": []
+    },
+    "6048": {
+        "amount": 265.0,
+        "notified_dupes": []
+    },
+    "6049": {
+        "amount": 10660.0,
+        "notified_dupes": []
+    },
+    "6050": {
+        "amount": 1680.0,
+        "notified_dupes": [
+            "THAILA_15.0"
+        ]
+    },
+    "6051": {
+        "amount": 9654.0,
+        "notified_dupes": []
+    },
+    "6052": {
+        "amount": 11013.0,
+        "notified_dupes": []
+    },
+    "6053": {
+        "amount": 2442.0,
+        "notified_dupes": []
+    },
+    "6054": {
+        "amount": 504.0,
+        "notified_dupes": []
+    },
+    "6055": {
+        "amount": 9785.0,
+        "notified_dupes": []
+    },
+    "6056": {
+        "amount": 12614.0,
+        "notified_dupes": []
+    },
+    "6057": {
+        "amount": 2654.0,
+        "notified_dupes": []
+    },
+    "6058": {
+        "amount": 681.0,
+        "notified_dupes": []
+    },
+    "6059": {
+        "amount": 50235.0,
+        "notified_dupes": []
+    },
+    "6060": {
+        "amount": 8582.0,
+        "notified_dupes": []
+    },
+    "6061": {
+        "amount": 12740.0,
+        "notified_dupes": [
+            "KANGAN_33.0",
+            "PAYAL_42.0"
+        ]
+    },
+    "6062": {
+        "amount": 15874.0,
+        "notified_dupes": []
+    },
+    "6063": {
+        "amount": 645.0,
+        "notified_dupes": []
+    },
+    "6064": {
+        "amount": 6480.0,
+        "notified_dupes": []
+    },
+    "6065": {
+        "amount": 120.0,
+        "notified_dupes": []
+    },
+    "6066": {
+        "amount": 10550.0,
+        "notified_dupes": []
+    },
+    "6067": {
+        "amount": 1330.0,
+        "notified_dupes": []
+    },
+    "6068": {
+        "amount": 2996.0,
+        "notified_dupes": []
+    },
+    "6069": {
+        "amount": 1711.0,
+        "notified_dupes": []
+    },
+    "6070": {
+        "amount": 6361.0,
+        "notified_dupes": []
+    },
+    "6071": {
+        "amount": 2061.0,
+        "notified_dupes": []
+    },
+    "6072": {
+        "amount": 289.0,
+        "notified_dupes": []
+    },
+    "6073": {
+        "amount": 2340.0,
+        "notified_dupes": []
+    },
+    "6074": {
+        "amount": 5160.0,
+        "notified_dupes": []
+    },
+    "6075": {
+        "amount": 3370.0,
+        "notified_dupes": []
+    },
+    "6076": {
+        "amount": 2740.0,
+        "notified_dupes": []
+    },
+    "6078": {
+        "amount": 2446.0,
+        "notified_dupes": []
+    },
+    "6079": {
+        "amount": 790.0,
+        "notified_dupes": []
+    },
+    "6080": {
+        "amount": 5600.0,
+        "notified_dupes": []
+    },
+    "6081": {
+        "amount": 3114.0,
+        "notified_dupes": []
+    },
+    "6082": {
+        "amount": 7325.0,
+        "notified_dupes": []
+    },
+    "6083": {
+        "amount": 2514.0,
+        "notified_dupes": []
+    },
+    "6084": {
+        "amount": 630.0,
+        "notified_dupes": []
+    },
+    "6087": {
+        "amount": 2300.0,
+        "notified_dupes": []
+    },
+    "6088": {
+        "amount": 2470.0,
+        "notified_dupes": []
+    },
+    "6092": {
+        "amount": 3451.0,
+        "notified_dupes": []
+    },
+    "6094": {
+        "amount": 9657.0,
+        "notified_dupes": []
+    },
+    "6095": {
+        "amount": 1730.0,
+        "notified_dupes": []
+    },
+    "6096": {
+        "amount": 1200.0,
+        "notified_dupes": []
+    },
+    "6097": {
+        "amount": 7050.0,
+        "notified_dupes": []
+    },
+    "6098": {
+        "amount": 12840.0,
+        "notified_dupes": []
+    },
+    "6099": {
+        "amount": 3791.0,
+        "notified_dupes": []
+    },
+    "6100": {
+        "amount": 890.0,
+        "notified_dupes": []
+    },
+    "6101": {
+        "amount": 6670.0,
+        "notified_dupes": []
+    },
+    "6102": {
+        "amount": 11968.0,
+        "notified_dupes": []
+    },
+    "6104": {
+        "amount": 13686.0,
+        "notified_dupes": []
+    },
+    "6105": {
+        "amount": 1290.0,
+        "notified_dupes": []
+    },
+    "6106": {
+        "amount": 451.0,
+        "notified_dupes": []
+    },
+    "6107": {
+        "amount": 17681.0,
+        "notified_dupes": []
+    },
+    "6108": {
+        "amount": 13690.0,
+        "notified_dupes": []
+    },
+    "6109": {
+        "amount": 4930.0,
+        "notified_dupes": []
+    },
+    "6110": {
+        "amount": 770.0,
+        "notified_dupes": []
+    },
+    "6111": {
+        "amount": 440.0,
+        "notified_dupes": []
+    },
+    "6112": {
+        "amount": 500.0,
+        "notified_dupes": []
+    },
+    "6113": {
+        "amount": 4603.0,
+        "notified_dupes": []
+    },
+    "6114": {
+        "amount": 1690.0,
+        "notified_dupes": []
+    },
+    "6116": {
+        "amount": 3960.0,
+        "notified_dupes": []
+    },
+    "6117": {
+        "amount": 5430.0,
+        "notified_dupes": []
+    },
+    "6118": {
+        "amount": 585.0,
+        "notified_dupes": []
+    },
+    "6119": {
+        "amount": 11945.0,
+        "notified_dupes": []
+    },
+    "6120": {
+        "amount": 4390.0,
+        "notified_dupes": []
+    },
+    "6121": {
+        "amount": 380.0,
+        "notified_dupes": []
+    },
+    "6122": {
+        "amount": 5800.0,
+        "notified_dupes": []
+    },
+    "6123": {
+        "amount": 771.0,
+        "notified_dupes": []
+    },
+    "6124": {
+        "amount": 3810.0,
+        "notified_dupes": []
+    },
+    "6125": {
+        "amount": 9323.0,
+        "notified_dupes": []
+    },
+    "6127": {
+        "amount": 3580.0,
+        "notified_dupes": []
+    },
+    "6128": {
+        "amount": 3200.0,
+        "notified_dupes": []
+    },
+    "6129": {
+        "amount": 7372.0,
+        "notified_dupes": []
+    },
+    "6130": {
+        "amount": 135.0,
+        "notified_dupes": []
+    },
+    "6132": {
+        "amount": 5380.0,
+        "notified_dupes": []
+    },
+    "6134": {
+        "amount": 11841.0,
+        "notified_dupes": []
+    },
+    "6135": {
+        "amount": 22966.0,
+        "notified_dupes": [
+            "KALCHER_60.0"
+        ]
+    },
+    "6137": {
+        "amount": 868.0,
+        "notified_dupes": []
+    },
+    "6138": {
+        "amount": 420.0,
+        "notified_dupes": []
+    },
+    "6141": {
+        "amount": 2350.0,
+        "notified_dupes": []
+    },
+    "6142": {
+        "amount": 2870.0,
+        "notified_dupes": []
+    },
+    "6143": {
+        "amount": 12190.0,
+        "notified_dupes": []
+    },
+    "6144": {
+        "amount": 9850.0,
+        "notified_dupes": []
+    },
+    "6145": {
+        "amount": 1596.0,
+        "notified_dupes": []
+    },
+    "6146": {
+        "amount": 561.0,
+        "notified_dupes": []
+    },
+    "6147": {
+        "amount": 1910.0,
+        "notified_dupes": []
+    },
+    "6148": {
+        "amount": 390.0,
+        "notified_dupes": []
+    },
+    "6149": {
+        "amount": 3852.0,
+        "notified_dupes": []
+    },
+    "6150": {
+        "amount": 803.0,
+        "notified_dupes": []
+    },
+    "6151": {
+        "amount": 3510.0,
+        "notified_dupes": []
+    },
+    "6152": {
+        "amount": 1600.0,
+        "notified_dupes": []
+    },
+    "6153": {
+        "amount": 1380.0,
+        "notified_dupes": []
+    },
+    "6154": {
+        "amount": 21960.0,
+        "notified_dupes": []
+    },
+    "6155": {
+        "amount": 353.0,
+        "notified_dupes": []
+    },
+    "6156": {
+        "amount": 10354.0,
+        "notified_dupes": []
+    },
+    "6157": {
+        "amount": 2540.0,
+        "notified_dupes": []
+    },
+    "6158": {
+        "amount": 3372.0,
+        "notified_dupes": []
     }
 }

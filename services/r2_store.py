@@ -1,7 +1,13 @@
 """
 r2_store.py — Cloudflare R2 Storage Service
-Handles upload, URL generation, and automatic deduplication/cleanup for HTML invoices & ledgers.
+Handles upload, URL generation, and canonical link management for HTML invoices & ledgers.
 All R2 interactions are isolated here. Uses boto3 S3-compatible API.
+
+Canonical URL Strategy:
+  - Each upload saves an ARCHIVED versioned copy:   i/{vcode}_{4chars}.html
+  - AND overwrites a CANONICAL fixed-URL file:      i/{vcode}.html
+  - WhatsApp always receives the canonical URL.
+  - Result: Any old link sent previously will auto-show the LATEST bill.
 """
 
 import boto3
@@ -77,60 +83,106 @@ def delete_objects_by_prefix(prefix: str):
 def upload_invoice_html(vcode: int, html_content: str) -> str:
     """
     Upload a sales invoice HTML to R2.
-    Deletes any previously uploaded versions of this voucher to prevent duplicate storage.
-    Returns the public URL.
-    Key pattern: i/{vcode}_{4chars}.html
+
+    Two files are written:
+      1. Archive copy  → i/{vcode}_{4chars}.html   (versioned, never deleted)
+      2. Canonical     → i/{vcode}.html             (always overwritten with latest)
+
+    Returns the CANONICAL URL — so any previously sent WhatsApp link
+    automatically opens the latest version of this bill.
     """
-    # Delete any previous uploads for this voucher
-    delete_objects_by_prefix(f"i/{vcode}_")
-    delete_objects_by_prefix(f"i/{vcode}.")
-    
+    # 1. Archive copy (keep history, unique suffix)
     suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
-    key = f"i/{vcode}_{suffix}.html"
-    return _upload_html(key, html_content, doc_type="invoice", ref_id=str(vcode))
+    archive_key = f"i/{vcode}_{suffix}.html"
+    _upload_html(archive_key, html_content, doc_type="invoice_archive", ref_id=str(vcode))
+    logger.info(f"[R2] Invoice archive saved → {archive_key}")
+
+    # 2. Canonical file (fixed URL — always latest)
+    canonical_key = f"i/{vcode}.html"
+    canonical_url = _upload_html(canonical_key, html_content, doc_type="invoice", ref_id=str(vcode))
+    logger.info(f"[R2] Invoice canonical updated → {canonical_key}")
+
+    return canonical_url
 
 
 def upload_ledger_html(party_code: int, html_content: str) -> str:
     """
     Upload a ledger HTML to R2.
-    Deletes any previously uploaded versions for this party to prevent duplicate storage.
-    Returns the public URL.
-    Key pattern: l/{party_code}_{4chars}.html
+
+    Two files are written:
+      1. Archive copy  → l/{party_code}_{4chars}.html  (versioned, never deleted)
+      2. Canonical     → l/{party_code}.html            (always overwritten with latest)
+
+    Returns the CANONICAL URL — so any previously sent WhatsApp link
+    automatically opens the latest ledger statement.
     """
-    # Delete any previous uploads for this party
-    delete_objects_by_prefix(f"l/{party_code}_")
-    delete_objects_by_prefix(f"l/{party_code}.")
-    
+    # 1. Archive copy
     suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
-    key = f"l/{party_code}_{suffix}.html"
-    return _upload_html(key, html_content, doc_type="ledger", ref_id=str(party_code))
+    archive_key = f"l/{party_code}_{suffix}.html"
+    _upload_html(archive_key, html_content, doc_type="ledger_archive", ref_id=str(party_code))
+    logger.info(f"[R2] Ledger archive saved → {archive_key}")
+
+    # 2. Canonical file (fixed URL — always latest)
+    canonical_key = f"l/{party_code}.html"
+    canonical_url = _upload_html(canonical_key, html_content, doc_type="ledger", ref_id=str(party_code))
+    logger.info(f"[R2] Ledger canonical updated → {canonical_key}")
+
+    return canonical_url
+
+
+def upload_receipt_html(vcode: int, html_content: str) -> str:
+    """
+    Upload a payment receipt HTML to R2.
+
+    Two files are written:
+      1. Archive copy  → r/{vcode}_{4chars}.html  (versioned, never deleted)
+      2. Canonical     → r/{vcode}.html            (always overwritten with latest)
+
+    Returns the CANONICAL URL — so any previously sent WhatsApp link
+    automatically opens the latest receipt.
+    """
+    # 1. Archive copy
+    suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
+    archive_key = f"r/{vcode}_{suffix}.html"
+    _upload_html(archive_key, html_content, doc_type="receipt_archive", ref_id=str(vcode))
+    logger.info(f"[R2] Receipt archive saved → {archive_key}")
+
+    # 2. Canonical file (fixed URL — always latest)
+    canonical_key = f"r/{vcode}.html"
+    canonical_url = _upload_html(canonical_key, html_content, doc_type="receipt", ref_id=str(vcode))
+    logger.info(f"[R2] Receipt canonical updated → {canonical_key}")
+
+    return canonical_url
 
 
 def upload_pdf_bytes(pdf_bytes: bytes, filename: str = "Invoice.pdf", ref_id: str = "") -> str:
     """
     Upload a PDF document to R2.
-    Deletes any previous versions of this PDF/voucher to prevent duplicate storage.
-    Returns the public URL.
-    Key pattern: pdf/{clean_name}_{4chars}.pdf
+
+    Two files are written:
+      1. Archive copy  → pdf/{clean_name}_{4chars}.pdf  (versioned, never deleted)
+      2. Canonical     → pdf/{clean_name}.pdf            (always overwritten with latest)
+
+    Returns the CANONICAL URL — so any previously sent PDF link
+    automatically downloads the latest version.
     """
     raw_name = filename[:-4] if filename.lower().endswith(".pdf") else filename
     clean_name = "".join(c for c in raw_name if c.isalnum() or c in ('-', '_')).rstrip()
     if not clean_name:
         clean_name = "invoice"
 
-    # Extract base name if timestamp suffix is present (e.g. GOPALMRKT-Sale-GM4165-154023 -> GOPALMRKT-Sale-GM4165)
-    m = re.match(r'^(.*?)(?:-\d{6})?$', clean_name)
-    base_name = m.group(1) if m else clean_name
-    
-    # Clean up old versions of this PDF
-    if base_name:
-        delete_objects_by_prefix(f"pdf/{base_name}")
-    if ref_id and ref_id != base_name:
-        delete_objects_by_prefix(f"pdf/{ref_id}")
-
+    # 1. Archive copy (versioned)
     suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
-    key = f"pdf/{clean_name}_{suffix}.pdf"
-    return _upload_bytes(key, pdf_bytes, content_type="application/pdf", doc_type="invoice_pdf", ref_id=ref_id)
+    archive_key = f"pdf/{clean_name}_{suffix}.pdf"
+    _upload_bytes(archive_key, pdf_bytes, content_type="application/pdf", doc_type="invoice_pdf_archive", ref_id=ref_id)
+    logger.info(f"[R2] PDF archive saved → {archive_key}")
+
+    # 2. Canonical file (fixed URL — always latest)
+    canonical_key = f"pdf/{clean_name}.pdf"
+    canonical_url = _upload_bytes(canonical_key, pdf_bytes, content_type="application/pdf", doc_type="invoice_pdf", ref_id=ref_id)
+    logger.info(f"[R2] PDF canonical updated → {canonical_key}")
+
+    return canonical_url
 
 
 

@@ -59,6 +59,25 @@ def api_create_receipt():
             narration=str(data.get("narration", "")),
             bill_adjustments=bill_adjustments or None
         )
+
+        if result.get("success") and result.get("vch_code"):
+            try:
+                from services.receipt_renderer import render_receipt_html
+                from services.r2_store import upload_receipt_html
+                vcode = int(result["vch_code"])
+                receipt_data = bfe_client.get_receipt_voucher_details(vcode)
+                if "error" not in receipt_data:
+                    company_info = {}
+                    try:
+                        company_info = bfe_client.get_company_info()
+                    except Exception:
+                        pass
+                    html_content = render_receipt_html(receipt_data, company_info=company_info)
+                    public_url = upload_receipt_html(vcode, html_content)
+                    result["url"] = public_url
+            except Exception as e:
+                pass
+
         return jsonify(result)
 
     except Exception as e:

@@ -15,10 +15,15 @@ from concurrent.futures import ThreadPoolExecutor
 from flask import Blueprint, request, jsonify, make_response
 
 import bfe_client
-from services.r2_store import upload_invoice_html, upload_ledger_html, upload_pdf_bytes
+from services.r2_store import upload_invoice_html, upload_ledger_html, upload_receipt_html, upload_pdf_bytes
 from services.invoice_renderer import render_invoice_html
 from services.ledger_renderer import render_ledger_html
-from routes.invoices import _build_ledger_whatsapp_msg
+from services.receipt_renderer import render_receipt_html
+from services.whatsapp_messages import (
+    _build_invoice_whatsapp_msg,
+    _build_receipt_whatsapp_msg,
+    _build_ledger_whatsapp_msg
+)
 from bridge.whatsapp import send_whatsapp_message, send_whatsapp_media, parse_and_clean_phone_numbers
 
 logger = logging.getLogger(__name__)
@@ -212,59 +217,7 @@ def _extract_vch_no_and_hint(text: str, filename: str = ""):
     return vch_no, hint, party_name_hint
 
 
-def _build_receipt_whatsapp_msg(receipt_data: dict, current_balance: str = "") -> str:
-    """Build a compact, clean WhatsApp payment receipt message."""
-    vno = receipt_data.get("vno") or receipt_data.get("vchno", "")
-    date_str = receipt_data.get("date", "")
-    amount = float(receipt_data.get("amount", 0))
-    party_name = receipt_data.get("party_name", "Customer")
-    mode = receipt_data.get("cash_bank_name", "Cash/Bank")
-    adjustments = receipt_data.get("adjustments", [])
-    
-    msg  = f"🏪 *गोपाल मार्केटिंग (GOPAL MARKETING)*\n"
-    msg += f"📍 ग्रीक पार्क, अंबिकापुर | 📞 9977414177\n"
-    msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"🧾 *भुगतान रसीद / PAYMENT RECEIPT*\n"
-    msg += f"🏢 *{party_name}*\n"
-    msg += f"📋 रसीद नं: *{vno}* | 📅 दिनांक: {date_str}\n"
-    msg += f"💰 प्राप्त राशि: *₹{amount:,.2f}* ({mode})\n"
-    
-    if adjustments:
-        adj_strs = [f"{a['ref_no']}: ₹{a['amount']:,.2f}" for a in adjustments]
-        msg += f"🔹 एडजस्ट बिल: {', '.join(adj_strs)}\n"
-        
-    if current_balance:
-        msg += f"📊 वर्तमान बकाया: *{current_balance}*\n"
-        
-    msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"🙏 *भुगतान के लिए धन्यवाद!*"
-    return msg
 
-
-def _build_invoice_whatsapp_msg(vno: str, date_str: str, party_name: str,
-                                total: float, url: str) -> str:
-    """Build a compact, clean WhatsApp text message with invoice link."""
-    if str(total).startswith("₹"):
-        formatted_total = str(total)
-    else:
-        try:
-            val = float(str(total).replace(",", ""))
-            formatted_total = f"₹{val:,.2f}"
-        except Exception:
-            formatted_total = f"₹{total}"
-    
-    msg  = f"🏪 *गोपाल मार्केटिंग (GOPAL MARKETING)*\n"
-    msg += f"📍 ग्रीक पार्क, अंबिकापुर | 📞 9977414177\n"
-    msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"🧾 *सेल्स बिल / SALES INVOICE*\n"
-    msg += f"🏢 *{party_name}*\n"
-    msg += f"📋 बिल नं: *{vno}* | 📅 दिनांक: {date_str}\n"
-    msg += f"💰 कुल राशि: *{formatted_total}*\n"
-    msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"📲 *डिजिटल बिल देखें / View & Download:*\n"
-    msg += f"👉 {url}\n\n"
-    msg += f"💡 _लिंक नीली (Clickable) न हो तो नंबर Save करें या 'Hi' भेजें।_"
-    return msg
 
 
 def _process_dispatch_background(target_phone: str, message_text: str, pdf_bytes: bytes, pdf_filename: str):
@@ -364,9 +317,18 @@ def _process_dispatch_background(target_phone: str, message_text: str, pdf_bytes
                     except Exception:
                         pass
                 
-                msg = _build_receipt_whatsapp_msg(receipt_data, current_balance=balance_text)
+                try:
+                    company_info = bfe_client.get_company_info()
+                except Exception:
+                    company_info = {}
+                    
+                html_content = render_receipt_html(receipt_data, company_info=company_info, current_balance=balance_text)
+                public_html_url = upload_receipt_html(vcode, html_content)
+                logger.info(f"[Busy Webhook Async] Generated online receipt HTML for vcode={vcode}: {public_html_url}")
+                
+                msg = _build_receipt_whatsapp_msg(receipt_data, current_balance=balance_text, url=public_html_url)
                 send_whatsapp_message(target_phone, msg)
-                logger.info(f"[Busy Webhook Async] Sent Payment Receipt {vno} to {target_phone}")
+                logger.info(f"[Busy Webhook Async] Sent Payment Receipt {vno} link to {target_phone} -> {public_html_url}")
             else:
                 final_msg = message_text or f"Payment received successfully for {vno}."
                 send_whatsapp_message(target_phone, final_msg)

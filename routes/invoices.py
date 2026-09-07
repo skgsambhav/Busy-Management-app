@@ -21,47 +21,11 @@ invoices_bp = Blueprint("invoices", __name__)
 # HELPERS
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _build_invoice_whatsapp_msg(vno: str, date_str: str, party_name: str,
-                                 total: str, url: str) -> str:
-    """Build a compact, clean WhatsApp text message with invoice link."""
-    if str(total).startswith("₹"):
-        formatted_total = str(total)
-    else:
-        try:
-            val = float(str(total).replace(",", ""))
-            formatted_total = f"₹{val:,.2f}"
-        except Exception:
-            formatted_total = f"₹{total}"
-    
-    msg  = f"🏪 *गोपाल मार्केटिंग (GOPAL MARKETING)*\n"
-    msg += f"📍 ग्रीक पार्क, अंबिकापुर | 📞 9977414177\n"
-    msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"🧾 *सेल्स बिल / SALES INVOICE*\n"
-    msg += f"🏢 *{party_name}*\n"
-    msg += f"📋 बिल नं: *{vno}* | 📅 दिनांक: {date_str}\n"
-    msg += f"💰 कुल राशि: *{formatted_total}*\n"
-    msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"📲 *डिजिटल बिल देखें / View & Download:*\n"
-    msg += f"👉 {url}\n\n"
-    msg += f"💡 _लिंक नीली (Clickable) न हो तो नंबर Save करें या 'Hi' भेजें।_"
-    return msg
-
-
-def _build_ledger_whatsapp_msg(party_name: str, balance_text: str,
-                                 dr_cr: str, url: str) -> str:
-    """Build a compact, clean WhatsApp text message with ledger link."""
-    dr_emoji = "🔴" if dr_cr == "Dr" else "🟢"
-    msg  = f"🏪 *गोपाल मार्केटिंग (GOPAL MARKETING)*\n"
-    msg += f"📍 ग्रीक पार्क, अंबिकापुर | 📞 9977414177\n"
-    msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"📒 *खाता विवरण / ACCOUNT STATEMENT*\n"
-    msg += f"🏢 *{party_name}*\n"
-    msg += f"{dr_emoji} कुल बकाया: *{balance_text} {dr_cr}*\n"
-    msg += f"━━━━━━━━━━━━━━━━━━\n"
-    msg += f"📲 *पूरा खाता देखें / View Statement:*\n"
-    msg += f"👉 {url}\n\n"
-    msg += f"💡 _लिंक नीली (Clickable) न हो तो नंबर Save करें या 'Hi' भेजें।_"
-    return msg
+from services.whatsapp_messages import (
+    _build_invoice_whatsapp_msg,
+    _build_receipt_whatsapp_msg,
+    _build_ledger_whatsapp_msg
+)
 
 
 def _fmt_amount(val: float) -> str:
@@ -426,4 +390,148 @@ def api_busy_dispatches_list():
     """Delegate to busy dispatches list."""
     from routes.busy_webhook import get_recent_busy_dispatches
     return get_recent_busy_dispatches()
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# RECEIPT ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@invoices_bp.route("/api/receipt/preview/<int:vcode>")
+def api_preview_receipt(vcode):
+    """Render and return receipt HTML directly in browser."""
+    try:
+        from services.receipt_renderer import render_receipt_html
+        receipt_data = bfe_client.get_receipt_voucher_details(vcode)
+        if "error" in receipt_data:
+            return f"<h2>Error: {receipt_data['error']}</h2>", 404
+
+        party_code = receipt_data.get("party_code", 0)
+        balance_text = ""
+        if party_code:
+            try:
+                bal_res = bfe_client.get_party_balance(party_code)
+                if bal_res:
+                    bal_val = bal_res.get("amount", 0)
+                    dr_cr = bal_res.get("dr_cr", "Dr")
+                    balance_text = f"₹{bal_val:,.2f} {dr_cr}"
+            except Exception:
+                pass
+
+        try:
+            company_info = bfe_client.get_company_info()
+        except Exception:
+            company_info = {}
+
+        html_content = render_receipt_html(receipt_data, company_info, current_balance=balance_text)
+        response = make_response(html_content)
+        response.headers["Content-Type"] = "text/html; charset=utf-8"
+        return response
+    except Exception as e:
+        logger.exception(f"[Receipt Preview] Error: {e}")
+        return f"<h2>Error: {e}</h2>", 500
+
+
+@invoices_bp.route("/api/receipt/upload/<int:vcode>", methods=["POST"])
+def api_upload_receipt(vcode):
+    """Upload digital receipt HTML to R2, return canonical URL."""
+    try:
+        from services.receipt_renderer import render_receipt_html
+        from services.r2_store import upload_receipt_html
+        receipt_data = bfe_client.get_receipt_voucher_details(vcode)
+        if "error" in receipt_data:
+            return jsonify({"success": False, "error": receipt_data["error"]}), 404
+
+        party_code = receipt_data.get("party_code", 0)
+        balance_text = ""
+        if party_code:
+            try:
+                bal_res = bfe_client.get_party_balance(party_code)
+                if bal_res:
+                    bal_val = bal_res.get("amount", 0)
+                    dr_cr = bal_res.get("dr_cr", "Dr")
+                    balance_text = f"₹{bal_val:,.2f} {dr_cr}"
+            except Exception:
+                pass
+
+        try:
+            company_info = bfe_client.get_company_info()
+        except Exception:
+            company_info = {}
+
+        html_content = render_receipt_html(receipt_data, company_info, current_balance=balance_text)
+        public_url = upload_receipt_html(vcode, html_content)
+        return jsonify({
+            "success": True,
+            "vcode": vcode,
+            "vno": receipt_data.get("vno", ""),
+            "url": public_url
+        })
+    except Exception as e:
+        logger.exception(f"[Receipt Upload] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@invoices_bp.route("/api/receipt/send", methods=["POST"])
+def api_send_receipt():
+    """Render digital receipt HTML -> Upload to R2 -> Send WhatsApp link."""
+    data = request.json or {}
+    vcode = data.get("vcode")
+    phone_override = data.get("phone", "").strip()
+    if not vcode:
+        return jsonify({"success": False, "error": "vcode is required"}), 400
+
+    try:
+        from services.receipt_renderer import render_receipt_html
+        from services.r2_store import upload_receipt_html
+
+        vcode = int(vcode)
+        receipt_data = bfe_client.get_receipt_voucher_details(vcode)
+        if "error" in receipt_data:
+            return jsonify({"success": False, "error": receipt_data["error"]}), 404
+
+        party_code = receipt_data.get("party_code", 0)
+        balance_text = ""
+        if party_code:
+            try:
+                bal_res = bfe_client.get_party_balance(party_code)
+                if bal_res:
+                    bal_val = bal_res.get("amount", 0)
+                    dr_cr = bal_res.get("dr_cr", "Dr")
+                    balance_text = f"₹{bal_val:,.2f} {dr_cr}"
+            except Exception:
+                pass
+
+        try:
+            company_info = bfe_client.get_company_info()
+        except Exception:
+            company_info = {}
+
+        html_content = render_receipt_html(receipt_data, company_info, current_balance=balance_text)
+        public_url = upload_receipt_html(vcode, html_content)
+
+        phone = phone_override or receipt_data.get("mobile", "")
+        if not phone:
+            return jsonify({
+                "success": False,
+                "error": "No phone number found for this party.",
+                "url": public_url,
+                "html_uploaded": True
+            }), 422
+
+        msg = _build_receipt_whatsapp_msg(receipt_data, current_balance=balance_text, url=public_url)
+        wa_result = send_whatsapp_message(phone, msg)
+
+        logger.info(f"[Receipt] Sent vcode={vcode} to {phone} -> {public_url}")
+        return jsonify({
+            "success": True,
+            "vcode": vcode,
+            "vno": receipt_data.get("vno", ""),
+            "url": public_url,
+            "phone": phone,
+            "whatsapp": wa_result
+        })
+    except Exception as e:
+        logger.exception(f"[Receipt Send] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 

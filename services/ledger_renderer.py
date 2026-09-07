@@ -5,14 +5,46 @@ Called from the 64-bit Flask process (no COM needed — uses bfe_client bridge).
 """
 
 import os
+import io
+import base64
+import qrcode
 from jinja2 import Environment
 
 _TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
 
+# Cache for header image base64
+_HEADER_B64 = ""
+def _get_header_b64() -> str:
+    global _HEADER_B64
+    if not _HEADER_B64:
+        p = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "hdr_compact_b64.txt")
+        if os.path.exists(p):
+            with open(p, "r", encoding="utf-8") as f:
+                _HEADER_B64 = f.read().strip()
+    return _HEADER_B64
+
+
+def _generate_upi_qr_b64(amount: float = 0.0) -> str:
+    """Generate instant offline UPI QR code in base64 format."""
+    try:
+        upi_url = "upi://pay?pa=gopalmarketing@ybl&pn=GOPAL%20MARKETING&cu=INR"
+        if amount and amount > 0:
+            upi_url += f"&am={amount:.2f}"
+        qr = qrcode.QRCode(version=1, box_size=4, border=1)
+        qr.add_data(upi_url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="#2b0409", back_color="white")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return base64.b64encode(buf.getvalue()).decode("utf-8")
+    except Exception:
+        return ""
+
+
 COMPANY_INFO_DEFAULT = {
     "name": "GOPAL MARKETING",
     "name_hi": "गोपाल मार्केटिंग",
-    "address": "GREEK PARK, AMBIKAPUR (C.G.)",
+    "address": "Green Park Colony Near Bharat Mata chauk, Kharsia Naka, Ambikapur, Surguja, Chhattisgarh - 497001",
     "phone1": "9977414177",
     "phone2": "9406040611",
 }
@@ -37,9 +69,9 @@ def _load_template() -> str:
 
 def _fmt_amount(val: float) -> str:
     try:
-        return f"₹{abs(float(val)):,.2f}"
+        return f"₹ {abs(float(val)):,.2f}"
     except Exception:
-        return "₹0.00"
+        return "₹ 0.00"
 
 
 def _fmt_bal(val: float) -> dict:
@@ -83,10 +115,22 @@ def render_ledger_html(party_name: str, party_name_hi: str,
     """
     company = company_info or COMPANY_INFO_DEFAULT
 
+    addr_parts = [
+        str(company.get("address1") or "").strip(),
+        str(company.get("address2") or "").strip(),
+        str(company.get("address3") or "").strip(),
+        str(company.get("address4") or "").strip(),
+    ]
+    raw_addr = ", ".join([p for p in addr_parts if p])
+    if not raw_addr or len(raw_addr) < 30 or "Kharsia" not in raw_addr:
+        final_address = COMPANY_INFO_DEFAULT["address"]
+    else:
+        final_address = raw_addr
+
     co = {
         "name": company.get("company_name") or company.get("name") or COMPANY_INFO_DEFAULT["name"],
         "name_hi": COMPANY_INFO_DEFAULT["name_hi"],
-        "address": company.get("address1", "") or COMPANY_INFO_DEFAULT["address"],
+        "address": final_address,
         "phone1": COMPANY_INFO_DEFAULT["phone1"],
         "phone2": COMPANY_INFO_DEFAULT["phone2"],
     }
@@ -137,6 +181,8 @@ def render_ledger_html(party_name: str, party_name_hi: str,
     display_name = party_name
 
     ctx = {
+        "header_b64": _get_header_b64(),
+        "upi_qr_b64": _generate_upi_qr_b64(total_pending if total_pending > 0 else (abs(running) if running < 0 else 0.0)),
         "company": co,
         "party_name": display_name,
         "party_name_en": party_name,

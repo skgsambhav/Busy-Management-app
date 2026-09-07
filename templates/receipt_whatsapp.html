@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="description" content="खाता विवरण — {{ party_name }} | Gopal Marketing">
-  <title>खाता विवरण — {{ party_name }} | गोपाल मार्केटिंग</title>
+  <meta name="description" content="भुगतान रसीद — {{ vno }} | {{ party_name }} | Gopal Marketing">
+  <title>भुगतान रसीद — {{ vno }} | गोपाल मार्केटिंग</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -29,6 +29,7 @@
       --red-light: #FEF2F2;
       --green-cr: #15803D;
       --green-light: #F0FDF4;
+      --green-accent: #22C55E;
       --text-dark: #1F2937;
       --text-med: #4B5563;
       --text-light: #6B7280;
@@ -57,7 +58,7 @@
       -webkit-user-select: none;
     }
 
-    .ledger-wrap {
+    .receipt-wrap {
       width: 100%;
       max-width: 480px;
       margin: 0 auto;
@@ -104,177 +105,152 @@
       image-rendering: -webkit-optimize-contrast;
     }
 
-    /* ── PARTY & STATEMENT TITLE STRIP ─────────────────────────────────── */
-    .party-card-box {
+    /* ── RECEIPT HERO STATUS CARD ──────────────────────────────────────── */
+    .rcpt-hero-card {
       margin: 8px 8px 0;
-      background: linear-gradient(135deg, #2B0106 0%, #3A0209 50%, #4D0A13 100%);
+      background: linear-gradient(135deg, #14532D 0%, #166534 50%, #15803D 100%);
       color: #FFFFFF;
       border-radius: var(--radius);
-      padding: 10px 12px;
-      box-shadow: 0 4px 14px rgba(43, 1, 6, 0.12);
-      border: 1px solid rgba(201, 164, 59, 0.4);
+      padding: 14px 14px;
+      box-shadow: 0 4px 15px rgba(22, 101, 52, 0.22);
+      border: 1px solid rgba(245, 208, 96, 0.4);
       position: relative;
       overflow: hidden;
+      text-align: center;
     }
 
-    .party-card-box::after {
+    .rcpt-hero-card::after {
       content: '';
       position: absolute;
       top: -30px;
       right: -30px;
-      width: 100px;
-      height: 100px;
+      width: 110px;
+      height: 110px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(245, 208, 96, 0.12) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
       pointer-events: none;
     }
 
-    .doc-badge-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px;
-      gap: 6px;
-    }
-
-    .doc-badge {
+    .rcpt-badge-pill {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      background: linear-gradient(90deg, #9A7B1A 0%, #D4AF37 50%, #F5D060 100%);
-      color: #2B0106;
-      font-size: 10px;
-      font-weight: 800;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.2);
+      color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 10.5px;
+      font-weight: 700;
       letter-spacing: 0.8px;
       text-transform: uppercase;
-      padding: 3px 8px;
-      border-radius: 4px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      margin-bottom: 6px;
     }
 
-    .doc-date-badge {
-      font-size: 10px;
-      color: #F8D675;
+    .rcpt-amount-box {
+      margin: 4px 0;
+    }
+
+    .rcpt-amount-label {
+      font-size: 11px;
+      color: #DCFCE7;
       font-weight: 600;
+      letter-spacing: 0.3px;
     }
 
-    .party-title-main {
-      font-size: 15px;
+    .rcpt-amount-val {
+      font-size: 28px;
       font-weight: 800;
       color: #FFFFFF;
-      letter-spacing: 0.2px;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    .rcpt-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 11px;
+      color: #FEF9C3;
+      font-weight: 600;
+      margin-top: 6px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.25);
+      padding-top: 6px;
+    }
+
+    .rcpt-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ── PARTY & VOUCHER DETAILS CARD ──────────────────────────────────── */
+    .party-card-box {
+      margin: 8px 8px 0;
+      background: #FFFFFF;
+      color: var(--text-dark);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      box-shadow: 0 2px 10px rgba(43, 1, 6, 0.05);
+      border: 1px solid var(--border);
+    }
+
+    .card-row-title {
+      font-size: 9.5px;
+      color: var(--text-light);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 2px;
+    }
+
+    .party-name-val {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--primary);
       line-height: 1.25;
       margin-bottom: 2px;
     }
 
-    .party-title-sub {
+    .party-name-hi-val {
       font-size: 11px;
-      color: #F8D675;
+      color: #B45309;
       font-weight: 600;
       margin-bottom: 6px;
     }
 
-    .party-info-grid {
+    .detail-grid {
       display: flex;
       flex-direction: column;
-      gap: 3px;
-      font-size: 10.5px;
-      color: #E5E7EB;
-      border-top: 1px dashed rgba(201, 164, 59, 0.35);
+      gap: 5px;
+      font-size: 11px;
+      border-top: 1px dashed var(--border);
       padding-top: 6px;
       margin-top: 4px;
     }
 
-    .party-info-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 5px;
-      line-height: 1.35;
-    }
-
-    .party-info-icon {
-      color: #F5D060;
-      flex-shrink: 0;
-      font-size: 11px;
-    }
-
-    /* ── HERO BALANCE CARD ─────────────────────────────────────────────── */
-    .balance-hero-card {
-      margin: 8px 8px 0;
-      background: #FFFFFF;
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      box-shadow: 0 2px 10px rgba(43, 1, 6, 0.06);
-      border: 1px solid var(--border);
+    .detail-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      position: relative;
-      overflow: hidden;
+      gap: 8px;
     }
 
-    .balance-hero-card.dr-border {
-      border-left: 5px solid var(--red-dr);
-      background: linear-gradient(135deg, #FFFFFF 0%, #FFF8F8 100%);
-    }
-
-    .balance-hero-card.cr-border {
-      border-left: 5px solid var(--green-cr);
-      background: linear-gradient(135deg, #FFFFFF 0%, #F6FEF8 100%);
-    }
-
-    .balance-hero-card.zero-border {
-      border-left: 5px solid #0284C7;
-      background: #FFFFFF;
-    }
-
-    .bal-info-col {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .bal-badge-tag {
-      font-size: 9.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: var(--text-light);
-      margin-bottom: 2px;
-    }
-
-    .bal-amt-display {
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.3px;
-      line-height: 1.2;
-    }
-
-    .dr-amt { color: var(--red-dr); }
-    .cr-amt { color: var(--green-cr); }
-    .zero-amt { color: #0284C7; }
-
-    .bal-status-sub {
-      font-size: 10px;
-      font-weight: 600;
-      margin-top: 1px;
-    }
-
-    .dr-sub { color: #B91C1C; }
-    .cr-sub { color: #15803D; }
-
-    .bal-icon-col {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      display: flex;
+    .detail-label {
+      color: var(--text-med);
+      font-weight: 500;
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
+      gap: 5px;
     }
 
-    .dr-icon-bg { background: #FEE2E2; color: var(--red-dr); }
-    .cr-icon-bg { background: #DCFCE7; color: var(--green-cr); }
-    .zero-icon-bg { background: #E0F2FE; color: #0284C7; }
+    .detail-val {
+      font-weight: 700;
+      color: #000000;
+      text-align: right;
+    }
 
     /* ── SECTION CARD ─────────────────────────────────────────────────── */
     .sec-card {
@@ -307,16 +283,7 @@
       text-transform: uppercase;
     }
 
-    .sec-header-badge {
-      font-size: 9px;
-      background: rgba(255, 255, 255, 0.15);
-      color: #FFFFFF;
-      padding: 2px 6px;
-      border-radius: 10px;
-      font-weight: 600;
-    }
-
-    /* ── TABLES (PENDING BILLS & TRANSACTIONS) ─────────────────────────── */
+    /* ── TABLES ───────────────────────────────────────────────────────── */
     .tbl-scroll {
       width: 100%;
       overflow-x: auto;
@@ -357,10 +324,6 @@
       border-bottom: none;
     }
 
-    .data-table tbody tr:nth-child(even) {
-      background: #FAFAFA;
-    }
-
     .data-table tbody td {
       padding: 6px 8px;
       vertical-align: middle;
@@ -374,68 +337,51 @@
     .cell-vno {
       font-weight: 700;
       color: var(--primary);
-      white-space: nowrap;
     }
 
-    .cell-date {
-      color: var(--text-light);
-      font-size: 9.5px;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-
-    .cell-type {
-      font-weight: 600;
-      color: var(--text-dark);
-    }
-
-    .cell-narr {
-      font-size: 9px;
-      color: var(--text-light);
-      max-width: 120px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .amt-dr-cell {
-      font-weight: 700;
-      color: var(--red-dr);
-      white-space: nowrap;
-    }
-
-    .amt-cr-cell {
+    .amt-cell {
       font-weight: 700;
       color: var(--green-cr);
-      white-space: nowrap;
     }
 
-    .tbl-total-row {
-      background: var(--red-light);
+    /* ── OUTSTANDING BALANCE CALLOUT CARD ──────────────────────────────── */
+    .balance-callout-card {
+      margin: 8px 8px 0;
+      background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+      border: 1.5px solid #F59E0B;
+      border-radius: var(--radius);
+      padding: 10px 14px;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
-      padding: 8px 12px;
-      font-weight: 800;
-      font-size: 12px;
-      color: var(--red-dr);
-      border-top: 1px solid #FCA5A5;
-    }
-
-    .empty-note {
-      padding: 20px;
+      justify-content: center;
       text-align: center;
-      color: var(--text-light);
-      font-size: 11px;
-      font-weight: 600;
+      gap: 3px;
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.12);
     }
 
-    .empty-icon {
-      font-size: 24px;
-      display: block;
-      margin-bottom: 4px;
-      color: var(--green-cr);
+    .bal-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
     }
+
+    .bal-heading {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #92400E;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .bal-val-text {
+      font-size: 16px;
+      font-weight: 800;
+      color: #B45309;
+      line-height: 1.25;
+    }
+
 
     /* ── FOOTER CODED STYLES ──────────────────────────────────────────── */
     .inv-footer-coded {
@@ -822,11 +768,11 @@
 
     /* ── MOBILE RESPONSIVE OPTIMIZATION (360px - 480px) ──────────────── */
     @media (max-width: 480px) {
-      .ledger-wrap {
+      .receipt-wrap {
         width: 100%;
         box-shadow: none;
       }
-      .party-card-box, .balance-hero-card, .sec-card {
+      .rcpt-hero-card, .party-card-box, .sec-card, .balance-callout-card {
         margin: 6px 6px 0;
       }
       .footer-hero-card {
@@ -885,14 +831,14 @@
 
     @media print {
       body { background: #fff; }
-      .ledger-wrap { max-width: 100%; box-shadow: none; }
+      .receipt-wrap { max-width: 100%; box-shadow: none; }
       .inv-footer-coded { display: none; }
     }
   </style>
 </head>
 
 <body>
-<div class="ledger-wrap">
+<div class="receipt-wrap">
 
   <!-- 1. TOP GOLD ACCENT LINE -->
   <div class="gold-line"></div>
@@ -905,182 +851,102 @@
   <!-- 3. GOLD DIVIDER LINE -->
   <div class="gold-line-sub"></div>
 
-  <!-- 4. PARTY & STATEMENT TITLE CARD -->
+  <!-- 4. RECEIPT HERO CARD -->
+  <div class="rcpt-hero-card">
+    <div class="rcpt-badge-pill">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <span>भुगतान प्राप्त • PAYMENT RECEIVED</span>
+    </div>
+
+    <div class="rcpt-amount-box">
+      <div class="rcpt-amount-label">कुल प्राप्त राशि (Received Amount)</div>
+      <div class="rcpt-amount-val">₹ {{ "{:,.2f}".format(amount) }}</div>
+    </div>
+
+    <div class="rcpt-meta-row">
+      <div class="rcpt-meta-item">
+        <span>रसीद नं:</span>
+        <strong style="color:#FFFFFF;">{{ vno }}</strong>
+      </div>
+      <span>•</span>
+      <div class="rcpt-meta-item">
+        <span>दिनांक:</span>
+        <strong style="color:#FFFFFF;">{{ date }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. PARTY & PAYMENT INFO CARD -->
   <div class="party-card-box">
-    <div class="doc-badge-row">
-      <div class="doc-badge">
-        <span>📋</span>
-        <span>खाता विवरण • ACCOUNT STATEMENT</span>
-      </div>
-      <div class="doc-date-badge">
-        {% if transactions and transactions|length > 0 %}{{ transactions[0].date }}{% endif %}
-      </div>
-    </div>
-
-    <div class="party-title-main">{{ party_name }}</div>
-    {% if party_name_en and party_name_en != party_name %}
-    <div class="party-title-sub">{{ party_name_en }}</div>
+    <div class="card-row-title">ग्राहक खाता (Customer Account)</div>
+    <div class="party-name-val">{{ party_name }}</div>
+    {% if party_name_hi and party_name_hi != party_name %}
+    <div class="party-name-hi-val">{{ party_name_hi }}</div>
     {% endif %}
 
-    <div class="party-info-grid">
+    <div class="detail-grid">
       {% if mobile %}
-      <div class="party-info-item">
-        <span class="party-info-icon">📱</span>
-        <span>{{ mobile }}</span>
+      <div class="detail-item">
+        <span class="detail-label">📱 मोबाइल (Mobile)</span>
+        <span class="detail-val">{{ mobile }}</span>
       </div>
       {% endif %}
-      {% if address %}
-      <div class="party-info-item">
-        <span class="party-info-icon">📍</span>
-        <span>{{ address }}</span>
+
+      <div class="detail-item">
+        <span class="detail-label">💳 भुगतान माध्यम (Payment Mode)</span>
+        <span class="detail-val" style="color:var(--green-cr);">{{ cash_bank_name or 'Cash/Bank' }}</span>
       </div>
-      {% endif %}
-      {% if gst %}
-      <div class="party-info-item">
-        <span class="party-info-icon">🧾</span>
-        <span>GSTIN: {{ gst }}</span>
+
+      {% if narration %}
+      <div class="detail-item">
+        <span class="detail-label">📝 विवरण (Narration)</span>
+        <span class="detail-val" style="font-size:10px;font-weight:600;">{{ narration }}</span>
       </div>
       {% endif %}
     </div>
   </div>
 
-  <!-- 5. HERO BALANCE CARD -->
-  <div class="balance-hero-card {% if net_bal.dr %}dr-border{% elif not net_bal.dr and net_bal.text != '₹0.00' %}cr-border{% else %}zero-border{% endif %}">
-    <div class="bal-info-col">
-      <div class="bal-badge-tag">कुल शुद्ध बकाया • Net Balance</div>
-      <div class="bal-amt-display {% if net_bal.dr %}dr-amt{% elif not net_bal.dr and net_bal.text != '₹0.00' %}cr-amt{% else %}zero-amt{% endif %}">
-        {{ net_bal.text }} <span style="font-size: 14px;">{{ net_bal.label }}</span>
-      </div>
-      <div class="bal-status-sub {% if net_bal.dr %}dr-sub{% else %}cr-sub{% endif %}">
-        {% if net_bal.dr %}
-        ⚠️ कृपया बकाया राशि का यथाशीघ्र भुगतान करें
-        {% elif not net_bal.dr and net_bal.text != '₹0.00' %}
-        ✓ आपकी अग्रिम (Credit) राशि सुरक्षित है
-        {% else %}
-        ✓ पूरा हिसाब चुकता है (No Dues)
-        {% endif %}
-      </div>
-    </div>
-    <div class="bal-icon-col {% if net_bal.dr %}dr-icon-bg{% elif not net_bal.dr and net_bal.text != '₹0.00' %}cr-icon-bg{% else %}zero-icon-bg{% endif %}">
-      {% if net_bal.dr %}
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-      {% elif not net_bal.dr and net_bal.text != '₹0.00' %}
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-      {% else %}
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- 6. PENDING BILLS SECTION -->
+  <!-- 6. BILL ADJUSTMENTS TABLE (IF ANY) -->
+  {% if adjustments and adjustments|length > 0 %}
   <div class="sec-card">
     <div class="sec-card-header">
       <div class="sec-header-title">
-        <span>📋</span>
-        <span>पेंडिंग बिल (Pending Bills)</span>
+        <span>🧾</span>
+        <span>बिल समायोजन (Adjusted Bills)</span>
       </div>
-      {% if pending_bills %}
-      <span class="sec-header-badge">{{ pending_bills|length }} बिल</span>
-      {% endif %}
+      <span style="font-size:9px;background:rgba(255,255,255,0.15);padding:2px 6px;border-radius:10px;font-weight:600;">{{ adjustments|length }} बिल</span>
     </div>
 
-    {% if pending_bills %}
     <div class="tbl-scroll">
       <table class="data-table">
         <thead>
           <tr>
-            <th>बिल नं.</th>
-            <th>दिनांक</th>
-            <th class="text-right">मूल राशि</th>
-            <th class="text-right">बकाया</th>
+            <th>बिल नंबर (Bill No)</th>
+            <th class="text-right">समायोजित राशि (Adjusted Amount)</th>
           </tr>
         </thead>
         <tbody>
-          {% for b in pending_bills %}
+          {% for adj in adjustments %}
           <tr>
-            <td><span class="cell-vno">{{ b.bill_no }}</span></td>
-            <td><span class="cell-date">{{ b.date }}</span></td>
-            <td class="text-right"><span style="color:#4B5563;font-size:10px;">{{ b.original }}</span></td>
-            <td class="text-right"><span class="amt-dr-cell">{{ b.balance }}</span></td>
+            <td><span class="cell-vno">{{ adj.ref_no }}</span></td>
+            <td class="text-right"><span class="amt-cell">₹ {{ "%.2f"|format(adj.amount|default(0)|float) }}</span></td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    <div class="tbl-total-row">
-      <span>💰 कुल पेंडिंग (Total Outstanding)</span>
-      <span>{{ total_pending }}</span>
-    </div>
-    {% else %}
-    <div class="empty-note">
-      <span class="empty-icon">✓</span>
-      कोई पेंडिंग बिल नहीं है (All Bills Cleared)
-    </div>
-    {% endif %}
   </div>
+  {% endif %}
 
-  <!-- 7. RECENT TRANSACTIONS SECTION -->
-  <div class="sec-card">
-    <div class="sec-card-header">
-      <div class="sec-header-title">
-        <span>📒</span>
-        <span>हालिया लेनदेन (Recent Transactions)</span>
-      </div>
-      {% if transactions %}
-      <span class="sec-header-badge">अंतिम {{ transactions|length }}</span>
-      {% endif %}
+  <!-- 7. CURRENT OUTSTANDING BALANCE CALLOUT -->
+  {% if current_balance %}
+  <div class="balance-callout-card">
+    <div class="bal-left">
+      <div class="bal-heading">वर्तमान शुद्ध बकाया (Current Balance)</div>
+      <div class="bal-val-text">{{ current_balance }}</div>
     </div>
-
-    {% if transactions %}
-    <div class="tbl-scroll">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>दिनांक / वाउचर</th>
-            <th>विवरण</th>
-            <th class="text-right">राशि</th>
-            <th class="text-right">बैलेंस</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for t in transactions %}
-          <tr>
-            <td>
-              <div class="cell-date">{{ t.date }}</div>
-              <div class="cell-vno">{{ t.vch_no }}</div>
-            </td>
-            <td>
-              <div class="cell-type">{{ t.type_label }}</div>
-              {% if t.narration %}
-              <div class="cell-narr" title="{{ t.narration }}">{{ t.narration }}</div>
-              {% endif %}
-            </td>
-            <td class="text-right">
-              <span class="{% if t.is_dr %}amt-dr-cell{% else %}amt-cr-cell{% endif %}">
-                {{ t.amount }}
-              </span>
-            </td>
-            <td class="text-right">
-              <span class="{% if t.running_bal.dr %}amt-dr-cell{% else %}amt-cr-cell{% endif %}">
-                {{ t.running_bal.text }}<br><small style="font-size:9px;">{{ t.running_bal.label }}</small>
-              </span>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% if txn_count > 50 %}
-    <div style="padding:6px 12px;background:#FFFDF9;font-size:9.5px;color:var(--text-light);text-align:center;border-top:1px solid var(--border);">
-      📄 दिखाए गए: 50 / कुल {{ txn_count }} प्रविष्टियाँ (Showing latest 50 entries)
-    </div>
-    {% endif %}
-    {% else %}
-    <div class="empty-note">
-      कोई लेनदेन नहीं मिला (No transactions found)
-    </div>
-    {% endif %}
   </div>
+  {% endif %}
 
   <!-- 8. PURE HTML/CSS CODED FOOTER (SIDE-BY-SIDE QR & BUTTONS) -->
   <div class="inv-footer-coded">
@@ -1100,12 +966,12 @@
 
         <!-- LEFT: UPI QR Code Box -->
         <div class="upi-qr-col">
-          <a href="upi://pay?pa=gopalmarketing@ybl&pn=Gopal%20Marketing{% if total_pending_raw and total_pending_raw > 0 %}&am={{ '%.2f'|format(total_pending_raw) }}{% endif %}&cu=INR" class="upi-qr-box" title="Click to Pay via UPI App">
+          <a href="upi://pay?pa=gopalmarketing@ybl&pn=Gopal%20Marketing&cu=INR" class="upi-qr-box" title="Click to Pay via UPI App">
             <div class="upi-header">
               <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
               Pay via UPI
             </div>
-            <img src="{% if upi_qr_b64 %}data:image/png;base64,{{ upi_qr_b64 }}{% else %}https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=upi://pay?pa=gopalmarketing@ybl%26pn=Gopal%20Marketing{% if total_pending_raw and total_pending_raw > 0 %}%26am={{ '%.2f'|format(total_pending_raw) }}{% endif %}%26cu=INR{% endif %}" alt="UPI QR Code" class="upi-qr-img" />
+            <img src="{% if upi_qr_b64 %}data:image/png;base64,{{ upi_qr_b64 }}{% else %}https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=upi://pay?pa=gopalmarketing@ybl%26pn=Gopal%20Marketing%26cu=INR{% endif %}" alt="UPI QR Code" class="upi-qr-img" />
             <div class="upi-id-badge" onclick="event.preventDefault();navigator.clipboard.writeText('gopalmarketing@ybl');alert('UPI ID Copied: gopalmarketing@ybl');" title="Click to Copy UPI ID">
               <span>UPI: gopalmarketing@ybl</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -1143,7 +1009,7 @@
           </a>
 
           <!-- Button 3: Download App -->
-          <a href="https://play.google.com/store/apps/details?id=com.gopalmarketing" target="blank" rel="noopener" class="btn-action-tile btn-app" title="Download Our B2B Wholesale Store App">
+          <a href="https://play.google.com/store/apps/details?id=com.gopalmarketing" target="_blank" rel="noopener" class="btn-action-tile btn-app" title="Download Our B2B Wholesale Store App">
             <div class="btn-content-left">
               <div class="btn-icon-box">
                 <svg viewBox="0 0 24 24"><path d="M3.609 1.814L13.792 12 3.61 22.186a1.986 1.986 0 0 1-.61-1.428V3.242c0-.555.228-1.057.609-1.428zm11.238 11.241l2.308 2.309-10.74 6.202 8.432-8.511zm0-2.11L6.415 2.434l10.74 6.202-2.308 2.309zm1.758 1.055l3.856 2.226c.717.414.717 1.089 0 1.503l-3.856 2.227-2.456-2.456 2.456-2.5z"/></svg>
@@ -1225,8 +1091,8 @@
 
   <!-- 10. COMPUTER-GENERATED WATERMARK -->
   <div class="watermark">
-    यह खाता विवरण कंप्यूटर द्वारा जारी किया गया है।<br>
-    This is a computer-generated account statement. Link valid for 30 days.
+    यह रसीद कंप्यूटर द्वारा जारी की गई है।<br>
+    This is a computer-generated receipt voucher. Link valid for 30 days.
   </div>
 
 </div>

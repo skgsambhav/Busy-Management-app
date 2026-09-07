@@ -47,7 +47,7 @@ VCH_TYPE_NAMES = {
 
 # -----------------------------------------------------------------------
 # Cloudflare R2 Storage — Invoice & Ledger HTML Storage
-# Bucket: gm-sales-invoice-30days  |  TTL: 30 days
+# Bucket: gm-sales-invoice-30days  |  TTL: 90 days
 # -----------------------------------------------------------------------
 R2_ACCOUNT_ID        = "e4b07c12ff976b1c8e5cb58b6fc67391"
 R2_ACCESS_KEY_ID     = "c4db66344adfa0054f2371cd1551935d"
@@ -56,4 +56,4 @@ R2_BUCKET_NAME       = "gm-sales-invoice-30days"
 R2_ENDPOINT_URL      = "https://e4b07c12ff976b1c8e5cb58b6fc67391.r2.cloudflarestorage.com"
 # Public Development URL (enabled on Cloudflare Dashboard)
 R2_PUBLIC_BASE_URL   = "https://pub-76fb10221bc945718a2e27ab1fa4fbec.r2.dev"
-R2_TTL_DAYS          = 30
+R2_TTL_DAYS          = 90
