@@ -2822,5 +2822,171 @@
     "6158": {
         "amount": 3372.0,
         "notified_dupes": []
+    },
+    "6168": {
+        "amount": 5382.0,
+        "notified_dupes": []
+    },
+    "6169": {
+        "amount": 1650.0,
+        "notified_dupes": []
+    },
+    "6170": {
+        "amount": 432.0,
+        "notified_dupes": []
+    },
+    "6171": {
+        "amount": 1002.0,
+        "notified_dupes": []
+    },
+    "6173": {
+        "amount": 2501.0,
+        "notified_dupes": []
+    },
+    "6176": {
+        "amount": 7694.0,
+        "notified_dupes": []
+    },
+    "6177": {
+        "amount": 5181.0,
+        "notified_dupes": []
+    },
+    "6180": {
+        "amount": 930.0,
+        "notified_dupes": []
+    },
+    "6181": {
+        "amount": 1530.0,
+        "notified_dupes": []
+    },
+    "6184": {
+        "amount": 474.0,
+        "notified_dupes": []
+    },
+    "6185": {
+        "amount": 3260.0,
+        "notified_dupes": []
+    },
+    "6186": {
+        "amount": 781.0,
+        "notified_dupes": []
+    },
+    "6187": {
+        "amount": 110.0,
+        "notified_dupes": []
+    },
+    "6194": {
+        "amount": 2621.0,
+        "notified_dupes": []
+    },
+    "6195": {
+        "amount": 4230.0,
+        "notified_dupes": []
+    },
+    "6196": {
+        "amount": 14600.0,
+        "notified_dupes": []
+    },
+    "6197": {
+        "amount": 2230.0,
+        "notified_dupes": []
+    },
+    "6198": {
+        "amount": 3803.0,
+        "notified_dupes": []
+    },
+    "6199": {
+        "amount": 2340.0,
+        "notified_dupes": []
+    },
+    "6200": {
+        "amount": 5776.0,
+        "notified_dupes": []
+    },
+    "6201": {
+        "amount": 680.0,
+        "notified_dupes": []
+    },
+    "6202": {
+        "amount": 5840.0,
+        "notified_dupes": []
+    },
+    "6204": {
+        "amount": 1941.0,
+        "notified_dupes": []
+    },
+    "6205": {
+        "amount": 3920.0,
+        "notified_dupes": []
+    },
+    "6206": {
+        "amount": 2331.0,
+        "notified_dupes": []
+    },
+    "6207": {
+        "amount": 92051.0,
+        "notified_dupes": []
+    },
+    "6208": {
+        "amount": 1160.0,
+        "notified_dupes": []
+    },
+    "6209": {
+        "amount": 810.0,
+        "notified_dupes": []
+    },
+    "6210": {
+        "amount": 19789.0,
+        "notified_dupes": []
+    },
+    "6211": {
+        "amount": 10394.0,
+        "notified_dupes": []
+    },
+    "6212": {
+        "amount": 1362.0,
+        "notified_dupes": []
+    },
+    "6213": {
+        "amount": 17751.0,
+        "notified_dupes": [
+            "LIPSTIK_186.0"
+        ]
+    },
+    "6214": {
+        "amount": 3320.0,
+        "notified_dupes": []
+    },
+    "6215": {
+        "amount": 2900.0,
+        "notified_dupes": []
+    },
+    "6216": {
+        "amount": 1870.0,
+        "notified_dupes": []
+    },
+    "6217": {
+        "amount": 75.0,
+        "notified_dupes": []
+    },
+    "6218": {
+        "amount": 1472.0,
+        "notified_dupes": []
+    },
+    "6219": {
+        "amount": 6800.0,
+        "notified_dupes": []
+    },
+    "6220": {
+        "amount": 2674.0,
+        "notified_dupes": []
+    },
+    "6221": {
+        "amount": 141.0,
+        "notified_dupes": []
+    },
+    "6222": {
+        "amount": 850.0,
+        "notified_dupes": []
     }
 }
