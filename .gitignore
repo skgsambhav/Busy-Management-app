@@ -1,6 +1,50 @@
+# ── Python ───────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual Environments ──────────────────────────────
+venv/
+env/
+.venv/
+
+# ── Logs ─────────────────────────────────────────────
 *.log
 tunnel_monitor.log
+data/web_app.log
+data/voucher_app.log
+
+# ── Runtime / Local Databases ─────────────────────────
+dispatches.db
+hdfc_transactions.db
+notifications.db
+data/approvals.db
+data/scrutiny_state.json
+
+# ── Sensitive Config (API keys / credentials) ─────────
+whatsapp_config.json
+hdfc_config.json
+
+# ── Scratch / Test Files ──────────────────────────────
 scratch/
+scratch_cols.txt
+embed_logo.py
+all_parties.json
+all_parties_default.json
+
+# ── Uploads (runtime generated) ──────────────────────
+uploads/
+
+# ── Build / PyInstaller ───────────────────────────────
+Source_Code/build/
+Source_Code/dist/
+*.spec
+Voucher_Approval_App.exe
+
+# ── OS Files ─────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini

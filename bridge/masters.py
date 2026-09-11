@@ -19,11 +19,13 @@ def update_master_namesl(master_code: int, name_sl: str):
 
 
 def get_parties():
-    """Get all Sundry Debtor ledgers."""
+    """Get all Sundry Debtor ledgers with mobile numbers."""
     sql = f"""
         SELECT m.Code, m.Name, m.NameSL, m.ParentGrp,
-               (SELECT Name FROM Master1 WHERE Code = m.ParentGrp) AS GrpName
+               (SELECT Name FROM Master1 WHERE Code = m.ParentGrp) AS GrpName,
+               mai.Mobile
         FROM Master1 m
+        LEFT JOIN MasterAddressInfo mai ON m.Code = mai.MasterCode
         WHERE m.MasterType = 2
           AND m.ParentGrp IN (
               SELECT Code FROM Master1 
@@ -45,7 +47,8 @@ def get_parties():
             "code": int(rst.Fields("Code").Value),
             "name": str(rst.Fields("Name").Value or "").strip().upper(),
             "name_sl": str(rst.Fields("NameSL").Value or "").strip(),
-            "group": str(rst.Fields("GrpName").Value or "").strip().upper()
+            "group": str(rst.Fields("GrpName").Value or "").strip().upper(),
+            "mobile": str(rst.Fields("Mobile").Value or "").strip()
         })
         rst.MoveNext()
     rst.Close()
