@@ -1,10 +1,17 @@
 """
 services/whatsapp_messages.py
-Centralized, pure corporate WhatsApp message templates for Gopal Marketing.
-Zero emojis, clean bold labels, solid dividers, and natural Hindi+English clarity.
+Centralized WhatsApp message templates for Gopal Marketing.
+Uses Option 1: Modern Left-Border Card Style (Double-line card frame).
+Provides clean, consistent, and beautiful formatting on both mobile and web.
 """
 
 from datetime import datetime
+
+# ── Card Border Elements ─────────────────────────────────────────────────────
+_CARD_TOP = "╔══════════════════════════════════"
+_CARD_MID = "╠══════════════════════════════════"
+_CARD_BOT = "╚══════════════════════════════════"
+_BAR      = "║ "
 
 
 def _clean_date(date_str: str) -> str:
@@ -32,80 +39,113 @@ def _clean_amount(val) -> str:
         return f"₹{s}"
 
 
+# ── Invoice Message ─────────────────────────────────────────────────────────
+
 def _build_invoice_whatsapp_msg(vno: str, date_str: str, party_name: str,
                                 total, url: str) -> str:
     """
-    Build a pure corporate WhatsApp sales bill notification message (zero emojis).
+    Build a modern left-bordered corporate WhatsApp sales bill notification.
     """
-    formatted_date = _clean_date(date_str)
+    formatted_date  = _clean_date(date_str)
     formatted_total = _clean_amount(total)
-    party_clean = str(party_name or "Customer").strip()
-    vno_clean = str(vno or "").strip()
+    party_clean     = str(party_name or "Customer").strip()
+    vno_clean       = str(vno or "").strip()
 
-    msg  = f"*GOPAL MARKETING — SALES BILL*\n"
-    msg += f"────────────────────────\n"
-    msg += f"*Party:* {party_clean}\n"
-    msg += f"*Bill No:* {vno_clean}\n"
-    msg += f"*Date:* {formatted_date}\n"
-    msg += f"*Bill Amount:* {formatted_total}\n"
-    msg += f"────────────────────────\n"
-    msg += f"*View Digital Bill / डिजिटल बिल देखें:*\n"
-    msg += f"{url}\n"
-    msg += f"────────────────────────\n"
-    msg += f"*GOPAL MARKETING*\n"
-    msg += f"Green Park Colony, Kharsia Naka, Ambikapur (C.G.)\n"
-    msg += f"Phone: 9977414177, 9406040611\n\n"
-    msg += f"*Note:* यदि लिंक न खुले, तो कृपया यह नंबर Save करें।"
-    return msg
+    lines = [
+        _CARD_TOP,
+        f"{_BAR}🧾 *GOPAL MARKETING*",
+        f"{_BAR}   *SALES BILL / बिक्री बिल*",
+        _CARD_MID,
+        f"{_BAR}👤 *Party   :* {party_clean}",
+        f"{_BAR}📄 *Bill No :* {vno_clean}",
+        f"{_BAR}📅 *Date    :* {formatted_date}",
+        f"{_BAR}💰 *Amount  :* {formatted_total}",
+    ]
+
+    if url:
+        lines += [
+            _CARD_MID,
+            f"{_BAR}🔗 *डिजिटल बिल देखने के लिए लिंक दबाएं:*",
+            f"{_BAR}{url}",
+        ]
+
+    lines += [
+        _CARD_BOT,
+        "",
+        "📍 Green Park Colony, Kharsia Naka,",
+        "   Ambikapur (C.G.)",
+        "📞 9977414177 | 9406040611",
+        "",
+        "_यदि लिंक न खुले तो कृपया यह नंबर Save करें।_",
+    ]
+    return "\n".join(lines)
 
 
-def _build_receipt_whatsapp_msg(receipt_data: dict, current_balance: str = "", url: str = "") -> str:
+# ── Receipt Message ─────────────────────────────────────────────────────────
+
+def _build_receipt_whatsapp_msg(receipt_data: dict, current_balance: str = "",
+                                url: str = "") -> str:
     """
-    Build a pure corporate WhatsApp payment receipt notification message (zero emojis).
+    Build a modern left-bordered corporate WhatsApp payment receipt notification.
     """
-    vno = str(receipt_data.get("vno") or receipt_data.get("vchno", "")).strip()
-    date_str = _clean_date(receipt_data.get("date", ""))
-    amount = float(receipt_data.get("amount", 0))
+    vno              = str(receipt_data.get("vno") or receipt_data.get("vchno", "")).strip()
+    date_str         = _clean_date(receipt_data.get("date", ""))
+    amount           = float(receipt_data.get("amount", 0))
     formatted_amount = f"₹{amount:,.2f}"
-    party_clean = str(receipt_data.get("party_name", "Customer")).strip()
-    mode = str(receipt_data.get("cash_bank_name") or "Bank/Cash").strip()
+    party_clean      = str(receipt_data.get("party_name", "Customer")).strip()
+    mode             = str(receipt_data.get("cash_bank_name") or "Bank/Cash").strip()
 
-    msg  = f"*GOPAL MARKETING — PAYMENT RECEIPT*\n"
-    msg += f"────────────────────────\n"
-    msg += f"*Party:* {party_clean}\n"
-    msg += f"*Receipt No:* {vno}\n"
-    msg += f"*Date:* {date_str}\n"
-    msg += f"*Amount Received:* {formatted_amount}\n"
-    msg += f"*Payment Mode:* {mode}\n"
+    lines = [
+        _CARD_TOP,
+        f"{_BAR}✅ *GOPAL MARKETING*",
+        f"{_BAR}   *PAYMENT RECEIPT / भुगतान रसीद*",
+        _CARD_MID,
+        f"{_BAR}👤 *Party   :* {party_clean}",
+        f"{_BAR}📄 *Rcpt No :* {vno}",
+        f"{_BAR}📅 *Date    :* {date_str}",
+        f"{_BAR}💰 *Amount  :* {formatted_amount}",
+        f"{_BAR}💳 *Mode    :* {mode}",
+    ]
+
     if current_balance:
         bal_str = str(current_balance).strip()
         if "Dr" in bal_str and "बकाया" not in bal_str:
             bal_str += " (बकाया)"
         elif "Cr" in bal_str and "जमा" not in bal_str:
             bal_str += " (जमा)"
-        msg += f"*Current Balance:* {bal_str}\n"
-    if url:
-        msg += f"────────────────────────\n"
-        msg += f"*View Digital Receipt / डिजिटल रसीद देखें:*\n"
-        msg += f"{url}\n"
-    msg += f"────────────────────────\n"
-    msg += f"*GOPAL MARKETING*\n"
-    msg += f"Green Park Colony, Kharsia Naka, Ambikapur (C.G.)\n"
-    msg += f"Phone: 9977414177, 9406040611\n\n"
-    msg += f"*Note:* यदि लिंक न खुले, तो कृपया यह नंबर Save करें।"
-    return msg
+        lines.append(f"{_BAR}⚖️ *Balance :* {bal_str}")
 
+    if url:
+        lines += [
+            _CARD_MID,
+            f"{_BAR}🔗 *डिजिटल रसीद देखने के लिए लिंक दबाएं:*",
+            f"{_BAR}{url}",
+        ]
+
+    lines += [
+        _CARD_BOT,
+        "",
+        "📍 Green Park Colony, Kharsia Naka,",
+        "   Ambikapur (C.G.)",
+        "📞 9977414177 | 9406040611",
+        "",
+        "_यदि लिंक न खुले तो कृपया यह नंबर Save करें।_",
+    ]
+    return "\n".join(lines)
+
+
+# ── Ledger Message ──────────────────────────────────────────────────────────
 
 def _build_ledger_whatsapp_msg(party_name: str, balance_text: str,
                                dr_cr: str, url: str, as_on_date: str = "") -> str:
     """
-    Build a pure corporate WhatsApp ledger statement notification message (zero emojis).
+    Build a modern left-bordered corporate WhatsApp ledger statement notification.
     """
-    party_clean = str(party_name or "Customer").strip()
-    date_str = _clean_date(as_on_date)
+    party_clean  = str(party_name or "Customer").strip()
+    date_str     = _clean_date(as_on_date)
 
-    dr_cr_clean = str(dr_cr or "").strip().upper()
-    bal_str = str(balance_text or "").strip()
+    dr_cr_clean  = str(dr_cr or "").strip().upper()
+    bal_str      = str(balance_text or "").strip()
     if not bal_str.startswith("₹"):
         try:
             num = float(bal_str.replace(",", ""))
@@ -118,19 +158,32 @@ def _build_ledger_whatsapp_msg(party_name: str, balance_text: str,
     elif dr_cr_clean == "CR":
         bal_display = f"{bal_str} Cr (जमा)"
     else:
-        bal_display = f"{bal_str}"
+        bal_display = bal_str
 
-    msg  = f"*GOPAL MARKETING — LEDGER STATEMENT*\n"
-    msg += f"────────────────────────\n"
-    msg += f"*Party:* {party_clean}\n"
-    msg += f"*Date:* {date_str}\n"
-    msg += f"*Current Balance:* {bal_display}\n"
-    msg += f"────────────────────────\n"
-    msg += f"*View Ledger / पूरा लेजर देखें:*\n"
-    msg += f"{url}\n"
-    msg += f"────────────────────────\n"
-    msg += f"*GOPAL MARKETING*\n"
-    msg += f"Green Park Colony, Kharsia Naka, Ambikapur (C.G.)\n"
-    msg += f"Phone: 9977414177, 9406040611\n\n"
-    msg += f"*Note:* यदि लिंक न खुले, तो कृपया यह नंबर Save करें।"
-    return msg
+    lines = [
+        _CARD_TOP,
+        f"{_BAR}📋 *GOPAL MARKETING*",
+        f"{_BAR}   *LEDGER STATEMENT / खाता विवरण*",
+        _CARD_MID,
+        f"{_BAR}👤 *Party   :* {party_clean}",
+        f"{_BAR}📅 *Date    :* {date_str}",
+        f"{_BAR}⚖️ *Balance :* {bal_display}",
+    ]
+
+    if url:
+        lines += [
+            _CARD_MID,
+            f"{_BAR}🔗 *पूरा लेजर देखने के लिए लिंक दबाएं:*",
+            f"{_BAR}{url}",
+        ]
+
+    lines += [
+        _CARD_BOT,
+        "",
+        "📍 Green Park Colony, Kharsia Naka,",
+        "   Ambikapur (C.G.)",
+        "📞 9977414177 | 9406040611",
+        "",
+        "_यदि लिंक न खुले तो कृपया यह नंबर Save करें।_",
+    ]
+    return "\n".join(lines)
