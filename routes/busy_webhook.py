@@ -241,50 +241,8 @@ def _process_dispatch_background(target_phone: str, message_text: str, pdf_bytes
                 vtype = int(found_vch.get("vtype") or 9)
                 found_vno = found_vch.get("vno", "")
                 
-                # ── SAFETY CHECK: Verify the found voucher's party phone matches target_phone ──
-                # This prevents sending invoice of Party A to the number of Party B
-                # (e.g. when a Cash voucher or wrong-party voucher is accidentally found by VchNo match)
-                if vch_no_candidate and target_phone:
-                    digits_target = ''.join(c for c in str(target_phone) if c.isdigit())
-                    last10_target = digits_target[-10:] if len(digits_target) >= 10 else ""
-                    if last10_target:
-                        try:
-                            parties = bfe_client.get_parties()
-                            # Check if any party with this phone matches the found voucher's party
-                            matching_party = None
-                            for p in parties:
-                                p_mob = ''.join(c for c in str(p.get("mobile", "")) if c.isdigit())
-                                if last10_target in p_mob or p_mob.endswith(last10_target):
-                                    matching_party = p
-                                    break
-                            
-                            if matching_party:
-                                party_code_from_phone = int(matching_party.get("code", 0))
-                                # Get the party code of the found voucher from DB
-                                found_party_code = found_vch.get("party_code")
-                                if found_party_code is None:
-                                    # Voucher has no party code (e.g. Cash/Bank voucher) 
-                                    # but phone maps to a real party — BLOCK IT
-                                    logger.warning(
-                                        f"[Busy Webhook Async] BLOCKING Cash/Unknown-party voucher {found_vno} "
-                                        f"for phone {target_phone} (maps to party_code={party_code_from_phone}). "
-                                        f"Voucher has no party (MasterCode1=None)."
-                                    )
-                                    vcode = None
-                                    vtype = None
-                                    found_vno = vch_no_candidate
-                                elif int(found_party_code) != party_code_from_phone:
-                                    logger.warning(
-                                        f"[Busy Webhook Async] PHONE MISMATCH DETECTED! "
-                                        f"Voucher {found_vno} belongs to party_code={found_party_code} "
-                                        f"but target phone {target_phone} maps to party_code={party_code_from_phone}. "
-                                        f"Skipping voucher to prevent wrong delivery."
-                                    )
-                                    vcode = None
-                                    vtype = None
-                                    found_vno = vch_no_candidate  # keep for logging
-                        except Exception as ve:
-                            logger.warning(f"[Busy Webhook Async] Phone verification check failed (non-fatal): {ve}")
+                if found_vch.get("party_code"):
+                    logger.info(f"[Busy Webhook Async] Matched voucher {found_vno} (vcode={vcode}) for party_code={found_vch.get('party_code')}")
                 
         except Exception as e:
             logger.warning(f"[Busy Webhook Async] Voucher lookup failed: {e}")

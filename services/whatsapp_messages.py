@@ -1,8 +1,9 @@
 """
 services/whatsapp_messages.py
 Centralized WhatsApp message templates for Gopal Marketing.
-Uses Option 1: Modern Left-Border Card Style (Double-line card frame).
+Uses Modern Left-Border Card Style (Double-line card frame).
 Provides clean, consistent, and beautiful formatting on both mobile and web.
+URL is placed outside the box on its own line to guarantee 100% active clickable links on all WhatsApp clients.
 """
 
 from datetime import datetime
@@ -65,13 +66,21 @@ def _build_invoice_whatsapp_msg(vno: str, date_str: str, party_name: str,
     if url:
         lines += [
             _CARD_MID,
-            f"{_BAR}🔗 *डिजिटल बिल देखने के लिए लिंक दबाएं:*",
-            f"{_BAR}{url}",
+            f"{_BAR}🔗 *डिजिटल बिल (Digital Bill Link):*",
         ]
 
     lines += [
         _CARD_BOT,
         "",
+    ]
+
+    if url:
+        lines += [
+            f"👉 {url}",
+            "",
+        ]
+
+    lines += [
         "📍 Green Park Colony, Kharsia Naka,",
         "   Ambikapur (C.G.)",
         "📞 9977414177 | 9406040611",
@@ -118,13 +127,21 @@ def _build_receipt_whatsapp_msg(receipt_data: dict, current_balance: str = "",
     if url:
         lines += [
             _CARD_MID,
-            f"{_BAR}🔗 *डिजिटल रसीद देखने के लिए लिंक दबाएं:*",
-            f"{_BAR}{url}",
+            f"{_BAR}🔗 *डिजिटल रसीद (Digital Receipt Link):*",
         ]
 
     lines += [
         _CARD_BOT,
         "",
+    ]
+
+    if url:
+        lines += [
+            f"👉 {url}",
+            "",
+        ]
+
+    lines += [
         "📍 Green Park Colony, Kharsia Naka,",
         "   Ambikapur (C.G.)",
         "📞 9977414177 | 9406040611",
@@ -173,13 +190,21 @@ def _build_ledger_whatsapp_msg(party_name: str, balance_text: str,
     if url:
         lines += [
             _CARD_MID,
-            f"{_BAR}🔗 *पूरा लेजर देखने के लिए लिंक दबाएं:*",
-            f"{_BAR}{url}",
+            f"{_BAR}🔗 *पूरा लेजर (Full Ledger Link):*",
         ]
 
     lines += [
         _CARD_BOT,
         "",
+    ]
+
+    if url:
+        lines += [
+            f"👉 {url}",
+            "",
+        ]
+
+    lines += [
         "📍 Green Park Colony, Kharsia Naka,",
         "   Ambikapur (C.G.)",
         "📞 9977414177 | 9406040611",
