@@ -56,12 +56,41 @@ def _init_busy_log_db():
                     error_msg TEXT
                 )
             """)
+            # Dedup tracking table to prevent double-sends
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS dispatch_dedup (
+                    dedup_key TEXT PRIMARY KEY,
+                    created_at TEXT
+                )
+            """)
             conn.commit()
     except Exception as e:
         logger.error(f"[Busy Webhook] DB init failed: {e}")
 
 
 _init_busy_log_db()
+
+
+def _is_duplicate_dispatch(phone: str, message_text: str, pdf_filename: str) -> bool:
+    """Check if this exact dispatch was already processed within last 60 seconds."""
+    import hashlib
+    key_raw = f"{phone}|{message_text[:200]}|{pdf_filename}"
+    dedup_key = hashlib.md5(key_raw.encode()).hexdigest()
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            # Clean old dedup entries (older than 2 minutes)
+            conn.execute("DELETE FROM dispatch_dedup WHERE created_at < datetime('now', '-2 minutes')")
+            # Check if this exact dispatch exists
+            row = conn.execute("SELECT 1 FROM dispatch_dedup WHERE dedup_key = ?", (dedup_key,)).fetchone()
+            if row:
+                logger.warning(f"[Busy Webhook] DUPLICATE dispatch blocked: phone={phone}, file={pdf_filename}")
+                return True
+            # Record this dispatch
+            conn.execute("INSERT INTO dispatch_dedup (dedup_key, created_at) VALUES (?, datetime('now'))", (dedup_key,))
+            conn.commit()
+    except Exception as e:
+        logger.warning(f"[Busy Webhook] Dedup check error (proceeding anyway): {e}")
+    return False
 
 
 def _log_dispatch(phone, vno, vcode, party_name, amount, html_url, pdf_url, message_text, status, error_msg=""):
@@ -130,12 +159,26 @@ def _find_party_by_phone_or_name(phone: str = "", name_hint: str = ""):
 def _extract_vch_no_and_hint(text: str, filename: str = ""):
     """
     Extract candidate voucher number, report type hint ('ledger', 'receipt', 'sale', or None),
-    and candidate party name.
-    Returns (vch_no_candidate, hint, party_name_hint).
+    and candidate party name, along with date and amount hints from the text.
+    Returns (vch_no_candidate, hint, party_name_hint, date_hint, amt_hint).
     """
     hint = None
     vch_no = ""
     party_name_hint = ""
+    date_hint = None
+    amt_hint = None
+    
+    if text:
+        import re
+        m_date = re.search(r'(\d{2}[-/]\d{2}[-/]\d{4})', text)
+        if m_date:
+            date_hint = m_date.group(1).replace('/', '-')
+        m_amt = re.search(r'(?:Rs\.?|Amt:?|Amount\s*\*?Rs\.?)\s*\*?\s*([\d,]+\.?\d*)', text, re.IGNORECASE)
+        if m_amt:
+            try:
+                amt_hint = float(m_amt.group(1).replace(',', ''))
+            except:
+                pass
     
     combined_lower = f"{text or ''} {filename or ''}".lower()
     
@@ -149,6 +192,7 @@ def _extract_vch_no_and_hint(text: str, filename: str = ""):
         
     # Extract party name candidate from text if present (e.g. Dear 'OM SHREE VINAYAK - LAKHANPUR')
     if text:
+        import re
         m = re.search(r"Dear\s+['\"]([^'\"]+)['\"]", text, re.IGNORECASE)
         if m:
             party_name_hint = m.group(1).strip()
@@ -160,6 +204,7 @@ def _extract_vch_no_and_hint(text: str, filename: str = ""):
     # 2. Check filename patterns
     if filename:
         # Pattern: -Rcpt-GMRCPT1262-154023.pdf or -Sale-GM4165-154023.pdf
+        import re
         m = re.search(r'[-_]?(?:Sale|Purc|Rcpt|Receipt|Pay|Vch|Invoice)[-_]([A-Za-z0-9\/]+)(?:-\d+)?(?:\.pdf|\b)', filename, re.IGNORECASE)
         if m:
             vch_no = m.group(1).strip()
@@ -167,7 +212,7 @@ def _extract_vch_no_and_hint(text: str, filename: str = ""):
                 hint = "receipt"
             elif "sale" in filename.lower():
                 hint = "sale"
-            return vch_no, hint, party_name_hint
+            return vch_no, hint, party_name_hint, date_hint, amt_hint
             
         # Pattern: GMRCPT1262-154023.pdf or GM4165-154023.pdf
         m = re.search(r'([A-Za-z0-9\/]+)-\d{6}(?:\.pdf|\b)', filename, re.IGNORECASE)
@@ -177,7 +222,7 @@ def _extract_vch_no_and_hint(text: str, filename: str = ""):
                 hint = "receipt"
             elif vch_no.upper().startswith("GM"):
                 hint = "sale"
-            return vch_no, hint, party_name_hint
+            return vch_no, hint, party_name_hint, date_hint, amt_hint
             
         # Direct GMRCPT or GM voucher in filename
         m = re.search(r'\b(GMRCPT\d+|RCPT\d+|GM\d+)\b', filename, re.IGNORECASE)
@@ -187,24 +232,25 @@ def _extract_vch_no_and_hint(text: str, filename: str = ""):
                 hint = "receipt"
             elif vch_no.upper().startswith("GM"):
                 hint = "sale"
-            return vch_no, hint, party_name_hint
+            return vch_no, hint, party_name_hint, date_hint, amt_hint
 
     # 3. Check message text patterns
     if text:
+        import re
         # Pattern: GMRCPT1262 or RCPT1262
         m = re.search(r'\b(GMRCPT\d+|RCPT\d+)\b', text, re.IGNORECASE)
         if m:
-            return m.group(1).strip(), "receipt", party_name_hint
+            return m.group(1).strip(), "receipt", party_name_hint, date_hint, amt_hint
             
         # Pattern: GM4165
         m = re.search(r'\b(GM\d+)\b', text, re.IGNORECASE)
         if m:
-            return m.group(1).strip(), "sale", party_name_hint
+            return m.group(1).strip(), "sale", party_name_hint, date_hint, amt_hint
             
         # Pattern: GM/26-27/001
         m = re.search(r'\b(GM\/[0-9\-]+\/\d+)\b', text, re.IGNORECASE)
         if m:
-            return m.group(1).strip(), "sale", party_name_hint
+            return m.group(1).strip(), "sale", party_name_hint, date_hint, amt_hint
             
         # Pattern: Invoice No: 1234 or Receipt No: 1234
         m = re.search(r'(?:Invoice|Bill|Inv|Receipt|Rcpt|Vch|Voucher)\s*(?:No\.?|#|:)\s*([A-Za-z0-9\/\-]+)', text, re.IGNORECASE)
@@ -212,9 +258,9 @@ def _extract_vch_no_and_hint(text: str, filename: str = ""):
             cand = m.group(1).strip()
             if "receipt" in text.lower() or "rcpt" in text.lower():
                 hint = "receipt"
-            return cand, hint, party_name_hint
+            return cand, hint, party_name_hint, date_hint, amt_hint
 
-    return vch_no, hint, party_name_hint
+    return vch_no, hint, party_name_hint, date_hint, amt_hint
 
 
 
@@ -228,14 +274,15 @@ def _process_dispatch_background(target_phone: str, message_text: str, pdf_bytes
     logger.info(f"[Busy Webhook Async] Processing dispatch for phone={target_phone}, file={pdf_filename}")
     
     # 1. Search for corresponding voucher / report in Busy Database
-    vch_no_candidate, hint, party_name_hint = _extract_vch_no_and_hint(message_text, pdf_filename)
+    vch_no_candidate, hint, party_name_hint, date_hint, amt_hint = _extract_vch_no_and_hint(message_text, pdf_filename)
+    logger.info(f"[Busy Webhook Async] Extracted: vch_no='{vch_no_candidate}', hint='{hint}', party_hint='{party_name_hint}', date='{date_hint}', amt='{amt_hint}'")
     vcode = None
     vtype = None
     found_vno = ""
     
     if hint != "ledger":
         try:
-            found_vch = bfe_client.find_voucher(vch_no=vch_no_candidate, phone=target_phone, hint=hint)
+            found_vch = bfe_client.find_voucher(vch_no=vch_no_candidate, phone=target_phone, date_str=date_hint, hint=hint, amount=amt_hint)
             if found_vch and found_vch.get("vcode"):
                 vcode = int(found_vch["vcode"])
                 vtype = int(found_vch.get("vtype") or 9)
@@ -489,7 +536,16 @@ def handle_busy_send():
 
     target_phone = phone_list[0]
     
-    # 4. Offload heavy processing to background thread pool (Non-blocking!)
+    # 4. Deduplication check — prevent double-sends from Busy network retries
+    if _is_duplicate_dispatch(target_phone, message_text, pdf_filename):
+        return jsonify({
+            "success": True,
+            "status": "DELIVRD",
+            "message": "Already dispatched (duplicate blocked)",
+            "phone": target_phone
+        }), 200
+    
+    # 5. Offload heavy processing to background thread pool (Non-blocking!)
     executor.submit(
         _process_dispatch_background,
         target_phone=target_phone,
@@ -498,7 +554,7 @@ def handle_busy_send():
         pdf_filename=pdf_filename
     )
 
-    # 5. INSTANT HTTP 200 OK Response back to Busy Win!
+    # 6. INSTANT HTTP 200 OK Response back to Busy Win!
     return jsonify({
         "success": True,
         "status": "DELIVRD",

@@ -673,22 +673,39 @@ def create_sales_voucher(date_str, customer_code, items, total_amount, narration
     return {"success": False, "error": err_msg}
 
 
-def find_voucher(vch_no=None, phone=None, date_str=None, hint=None):
+def find_voucher(vch_no=None, phone=None, date_str=None, hint=None, amount=None):
     """
     Search for any voucher (Sales=9, Receipt=14, Payment=15, etc.) in Tran1.
     hint can be 'receipt', 'sale', 'payment' or None.
     Returns {"vcode": vcode, "vtype": vtype, "vno": vno, "party_code": party_code} or None.
+    
+    PRIORITY ORDER:
+    1. Exact VchNo match (highest priority — if found, STOP immediately)
+    2. Suffix LIKE match on VchNo (e.g. "4165" matches "GM4165") — restricted to last 2 days
+    3. Phone-based party lookup — ONLY used when NO vch_no was provided at all
+       Uses date and amount if provided to accurately match old vouchers!
     """
     vcode = None
     vtype = None
     vno_found = ""
     party_code_found = None
 
-    # 1. Search by VchNo across Tran1
-    if vch_no:
+    has_vch_no_input = bool(vch_no and str(vch_no).strip())
+
+    # ── Step 1: Exact VchNo match ──────────────────────────────────────────
+    if has_vch_no_input:
         clean_vno = str(vch_no).strip()
-        # Direct exact match — also fetch MasterCode1 for phone cross-verification
-        sql = f"SELECT TOP 1 VchCode, VchType, VchNo, MasterCode1, Date, VchAmtBaseCur FROM Tran1 WHERE VchNo = '{clean_vno}' ORDER BY VchCode DESC"
+        
+        # 1a. Direct exact match
+        type_filter = ""
+        if hint == "receipt":
+            type_filter = "AND VchType = 14"
+        elif hint == "sale":
+            type_filter = "AND VchType = 9"
+        elif hint == "payment":
+            type_filter = "AND VchType = 15"
+        
+        sql = f"SELECT TOP 1 VchCode, VchType, VchNo, MasterCode1, Date, VchAmtBaseCur FROM Tran1 WHERE VchNo = '{clean_vno}' {type_filter} ORDER BY VchCode DESC"
         rst = _get_rs(sql)
         if not rst.EOF:
             vcode = int(rst.Fields("VchCode").Value)
@@ -699,10 +716,15 @@ def find_voucher(vch_no=None, phone=None, date_str=None, hint=None):
                 party_code_found = int(mc1)
         rst.Close()
         
-        # If not found, try LIKE match (e.g. if vch_no is "123" and stored as "GM123" or "GMRCPT123")
-        # Safety: restrict to vouchers from the past 2 days to avoid false positives on old data
-        if not vcode and len(clean_vno) >= 2:
-            sql = f"SELECT TOP 1 VchCode, VchType, VchNo, MasterCode1, Date, VchAmtBaseCur FROM Tran1 WHERE (VchNo LIKE '%{clean_vno}%' OR VchNo LIKE '%{clean_vno}') AND Date >= (Now() - 2) ORDER BY VchCode DESC"
+        # If exact match found → DONE. Don't fall through to phone lookup.
+        if vcode:
+            return {"vcode": vcode, "vtype": vtype, "vno": vno_found, "party_code": party_code_found}
+        
+        # 1b. Suffix LIKE match — only if exact match failed
+        # Use suffix match (LIKE '%GM4165') not substring (LIKE '%4165%') to reduce false positives
+        # Restrict to last 2 days to avoid matching ancient vouchers
+        if len(clean_vno) >= 3:
+            sql = f"SELECT TOP 1 VchCode, VchType, VchNo, MasterCode1, Date, VchAmtBaseCur FROM Tran1 WHERE VchNo LIKE '%{clean_vno}' {type_filter} AND Date >= (Now() - 2) ORDER BY VchCode DESC"
             rst = _get_rs(sql)
             if not rst.EOF:
                 vcode = int(rst.Fields("VchCode").Value)
@@ -712,9 +734,113 @@ def find_voucher(vch_no=None, phone=None, date_str=None, hint=None):
                 if mc1 is not None:
                     party_code_found = int(mc1)
             rst.Close()
+            
+            if vcode:
+                return {"vcode": vcode, "vtype": vtype, "vno": vno_found, "party_code": party_code_found}
 
-    # 2. Search by Phone Number if not found by VchNo
-    if not vcode and phone:
+    # ── Step 2: Global Date + Amount + Type Fallback ────────────────────────
+    if not vcode and date_str and amount and amount > 0:
+        type_filter = ""
+        if hint == "receipt":
+            type_filter = "AND VchType = 14"
+        elif hint == "sale":
+            type_filter = "AND VchType = 9"
+        elif hint == "payment":
+            type_filter = "AND VchType = 15"
+            
+        date_filter = ""
+        try:
+            if '-' in date_str:
+                p = date_str.split('-')
+                if len(p) == 3:
+                    if len(p[2]) == 4: # DD-MM-YYYY
+                        ds = f"{p[2]}-{p[1]}-{p[0]}"
+                    else:
+                        ds = date_str
+                    date_filter = f"AND Date = #{ds}#"
+        except:
+            pass
+            
+        amt_filter = f"AND (VchAmtBaseCur >= {amount - 1} AND VchAmtBaseCur <= {amount + 1})"
+        
+        if date_filter:
+            # First, try to find any voucher matching Type, Date, and Amount
+            sql_global = f"SELECT VchCode, VchType, VchNo, MasterCode1, MasterCode2 FROM Tran1 WHERE 1=1 {type_filter} {date_filter} {amt_filter} ORDER BY VchCode DESC"
+            try:
+                rs_global = _get_rs(sql_global)
+                matches = []
+                while not rs_global.EOF:
+                    matches.append({
+                        "vcode": int(rs_global.Fields("VchCode").Value),
+                        "vtype": int(rs_global.Fields("VchType").Value),
+                        "vno": str(rs_global.Fields("VchNo").Value or "").strip(),
+                        "mc1": rs_global.Fields("MasterCode1").Value,
+                        "mc2": rs_global.Fields("MasterCode2").Value
+                    })
+                    rs_global.MoveNext()
+                rs_global.Close()
+                
+                if len(matches) == 1:
+                    # Exactly one match! Perfect.
+                    vcode = matches[0]["vcode"]
+                    vtype = matches[0]["vtype"]
+                    vno_found = matches[0]["vno"]
+                    party_code_found = matches[0]["mc1"] if matches[0]["mc1"] else matches[0]["mc2"]
+                elif len(matches) > 1:
+                    # Multiple matches. Let's try to filter by Party Code (from Phone)
+                    pcode = None
+                    if phone:
+                        digits = ''.join(c for c in str(phone) if c.isdigit())
+                        if len(digits) >= 10:
+                            last10 = digits[-10:]
+                            sql_party = f"SELECT TOP 1 m.Code FROM Master1 m INNER JOIN MasterAddressInfo mai ON m.Code = mai.MasterCode WHERE mai.Mobile LIKE '%{last10}%' AND m.MasterType = 2"
+                            try:
+                                rst_p = _get_rs(sql_party)
+                                if not rst_p.EOF:
+                                    pcode = int(rst_p.Fields("Code").Value)
+                                rst_p.Close()
+                            except:
+                                pass
+                    
+                    found_match = False
+                    if pcode:
+                        for m in matches:
+                            if m["mc1"] == pcode or m["mc2"] == pcode:
+                                vcode = m["vcode"]
+                                vtype = m["vtype"]
+                                vno_found = m["vno"]
+                                party_code_found = pcode
+                                found_match = True
+                                break
+                                
+                        if not found_match and hint == "receipt":
+                            # For receipts, party code might be in Tran2
+                            for m in matches:
+                                sql_t2 = f"SELECT TOP 1 MasterCode1 FROM Tran2 WHERE VchCode = {m['vcode']} AND MasterCode1 = {pcode}"
+                                try:
+                                    rst_t2 = _get_rs(sql_t2)
+                                    if not rst_t2.EOF:
+                                        vcode = m["vcode"]
+                                        vtype = m["vtype"]
+                                        vno_found = m["vno"]
+                                        party_code_found = pcode
+                                        found_match = True
+                                    rst_t2.Close()
+                                except:
+                                    pass
+                                if found_match: break
+                                
+                    if not found_match:
+                        # Fallback to the latest one if we can't filter
+                        vcode = matches[0]["vcode"]
+                        vtype = matches[0]["vtype"]
+                        vno_found = matches[0]["vno"]
+                        party_code_found = matches[0]["mc1"]
+            except Exception as e:
+                pass
+
+    # ── Step 3: Phone-based lookup (Legacy Fallback) ────────────────────────
+    if not vcode and phone and not has_vch_no_input:
         digits = ''.join(c for c in str(phone) if c.isdigit())
         if len(digits) >= 10:
             last10 = digits[-10:]
@@ -740,49 +866,40 @@ def find_voucher(vch_no=None, phone=None, date_str=None, hint=None):
                     type_filter = "AND VchType = 9"
                 elif hint == "payment":
                     type_filter = "AND VchType = 15"
-                    
-                sql_v = f"SELECT TOP 1 VchCode, VchType, VchNo FROM Tran1 WHERE MasterCode1 = {pcode} {type_filter} ORDER BY VchCode DESC"
+                
+                # CRITICAL: Restrict to last 2 days to avoid returning old/wrong vouchers
+                sql_v = f"SELECT TOP 1 VchCode, VchType, VchNo FROM Tran1 WHERE (MasterCode1 = {pcode} OR MasterCode2 = {pcode}) {type_filter} AND Date >= (Now() - 2) ORDER BY VchCode DESC"
                 try:
                     rst_v = _get_rs(sql_v)
                     if not rst_v.EOF:
                         vcode = int(rst_v.Fields("VchCode").Value)
                         vtype = int(rst_v.Fields("VchType").Value)
                         vno_found = str(rst_v.Fields("VchNo").Value or "").strip()
-                        party_code_found = pcode  # Phone-based lookup: party is already verified
+                        party_code_found = pcode
                     rst_v.Close()
                 except:
                     pass
 
-                # Check BillingDet if still not found — only when pcode is known (party is verified)
-                if not vcode:
-                    type_filter_bd = ""
-                    if hint == "receipt":
-                        type_filter_bd = "AND t1.VchType = 14"
-                    elif hint == "sale":
-                        type_filter_bd = "AND t1.VchType = 9"
-                        
-                    sql_bd = f"""
+                # Check Tran2 for Receipts if not found
+                if not vcode and hint == "receipt":
+                    sql_t2 = f"""
                         SELECT TOP 1 t1.VchCode, t1.VchType, t1.VchNo FROM Tran1 t1 
-                        INNER JOIN BillingDet bd ON t1.VchCode = bd.VchCode 
-                        WHERE t1.MasterCode1 = {pcode} {type_filter_bd} 
+                        INNER JOIN Tran2 t2 ON t1.VchCode = t2.VchCode 
+                        WHERE t2.MasterCode1 = {pcode} {type_filter} AND t1.Date >= (Now() - 2)
                         ORDER BY t1.VchCode DESC
                     """
                     try:
-                        rst_bd = _get_rs(sql_bd)
-                        if not rst_bd.EOF:
-                            vcode = int(rst_bd.Fields("VchCode").Value)
-                            vtype = int(rst_bd.Fields("VchType").Value)
-                            vno_found = str(rst_bd.Fields("VchNo").Value or "").strip()
-                            party_code_found = pcode  # BillingDet lookup: party is verified via pcode
-                        rst_bd.Close()
+                        rst_t2 = _get_rs(sql_t2)
+                        if not rst_t2.EOF:
+                            vcode = int(rst_t2.Fields("VchCode").Value)
+                            vtype = int(rst_t2.Fields("VchType").Value)
+                            vno_found = str(rst_t2.Fields("VchNo").Value or "").strip()
+                            party_code_found = pcode
+                        rst_t2.Close()
                     except:
                         pass
 
-    # NOTE: Step 3 (fallback to latest voucher) has been REMOVED.
-    # Previously this returned any latest voucher from DB when vch_no/phone lookup failed,
-    # which caused invoices to be sent to wrong phone numbers (e.g. Party A's invoice
-    # going to Party B's number). Now we return None if no match found.
-
+    # If no match found at all, return None
     return {"vcode": vcode, "vtype": vtype, "vno": vno_found, "party_code": party_code_found} if vcode else None
 
 

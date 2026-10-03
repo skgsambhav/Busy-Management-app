@@ -47,13 +47,13 @@ VCH_TYPE_NAMES = {
 
 # -----------------------------------------------------------------------
 # Cloudflare R2 Storage — Invoice & Ledger HTML Storage
-# Bucket: gm-sales-invoice-30days  |  TTL: 90 days
+# Bucket: gopalmarketing  |  Domain: https://gopalmarketing.in
 # -----------------------------------------------------------------------
-R2_ACCOUNT_ID        = "e4b07c12ff976b1c8e5cb58b6fc67391"
-R2_ACCESS_KEY_ID     = "c4db66344adfa0054f2371cd1551935d"
-R2_SECRET_ACCESS_KEY = "4d2737cbfc06c58d83b9a789d9f2aa582995522ae6e9f982b862968f7dee07e4"
-R2_BUCKET_NAME       = "gm-sales-invoice-30days"
-R2_ENDPOINT_URL      = "https://e4b07c12ff976b1c8e5cb58b6fc67391.r2.cloudflarestorage.com"
-# Public Development URL (enabled on Cloudflare Dashboard)
-R2_PUBLIC_BASE_URL   = "https://pub-76fb10221bc945718a2e27ab1fa4fbec.r2.dev"
-R2_TTL_DAYS          = 90
+R2_ACCOUNT_ID        = "0b965e15d5c6d875a1507dd390b7c5df"
+R2_ACCESS_KEY_ID     = "4f850e2e932a0e3de875a3c551e062de"
+R2_SECRET_ACCESS_KEY = "c8f4b590207298f2dcdc3caa138640cb6ed72cfeea9f97ec4705034f22dbf9c6"
+R2_BUCKET_NAME       = "gopalmarketing"
+R2_ENDPOINT_URL      = "https://0b965e15d5c6d875a1507dd390b7c5df.r2.cloudflarestorage.com"
+R2_PUBLIC_BASE_URL   = "https://doc.gopalmarketing.in"
+R2_DOC_PREFIX        = "doc"
+R2_TTL_DAYS          = 180

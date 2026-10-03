@@ -17,13 +17,16 @@ _TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templ
 
 # Cache for header image base64
 _HEADER_B64 = ""
+_HEADER_MTIME = 0
 def _get_header_b64() -> str:
-    global _HEADER_B64
-    if not _HEADER_B64:
-        p = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "hdr_compact_b64.txt")
-        if os.path.exists(p):
+    global _HEADER_B64, _HEADER_MTIME
+    p = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "hdr_compact_b64.txt")
+    if os.path.exists(p):
+        current_mtime = os.path.getmtime(p)
+        if not _HEADER_B64 or current_mtime != _HEADER_MTIME:
             with open(p, "r", encoding="utf-8") as f:
                 _HEADER_B64 = f.read().strip()
+            _HEADER_MTIME = current_mtime
     return _HEADER_B64
 
 

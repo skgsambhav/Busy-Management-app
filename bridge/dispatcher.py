@@ -94,7 +94,7 @@ def main():
             elif action == "find_sales_voucher":
                 result = {"data": find_sales_voucher(vch_no=cmd.get("vch_no"), phone=cmd.get("phone"), date_str=cmd.get("date_str"))}
             elif action == "find_voucher":
-                result = {"data": find_voucher(vch_no=cmd.get("vch_no"), phone=cmd.get("phone"), date_str=cmd.get("date_str"), hint=cmd.get("hint"))}
+                result = {"data": find_voucher(vch_no=cmd.get("vch_no"), phone=cmd.get("phone"), date_str=cmd.get("date_str"), hint=cmd.get("hint"), amount=cmd.get("amount"))}
             elif action == "get_receipt_voucher_details":
                 result = get_receipt_voucher_details(int(cmd["vcode"]))
             elif action == "get_recent_receipts":

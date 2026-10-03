@@ -127,9 +127,9 @@ def find_sales_voucher(vch_no: str = None, phone: str = None, date_str: str = No
     return _send_command({"cmd": "find_sales_voucher", "vch_no": vch_no, "phone": phone, "date_str": date_str})["data"]
 
 
-def find_voucher(vch_no: str = None, phone: str = None, date_str: str = None, hint: str = None):
+def find_voucher(vch_no: str = None, phone: str = None, date_str: str = None, hint: str = None, amount: float = None):
     """Search for any voucher (Sales, Receipt, Payment) in Tran1."""
-    return _send_command({"cmd": "find_voucher", "vch_no": vch_no, "phone": phone, "date_str": date_str, "hint": hint})["data"]
+    return _send_command({"cmd": "find_voucher", "vch_no": vch_no, "phone": phone, "date_str": date_str, "hint": hint, "amount": amount})["data"]
 
 
 

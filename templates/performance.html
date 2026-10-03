@@ -422,6 +422,24 @@ document.addEventListener("DOMContentLoaded", function() {
             });
     }
 
+    function isTuesday(day) {
+        if (day.date) {
+            const parts = day.date.split('-');
+            if (parts.length === 3) {
+                const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                return d.getDay() === 2; // 0=Sun, 1=Mon, 2=Tue
+            }
+        }
+        if (day.display_date) {
+            const parts = day.display_date.split('-');
+            if (parts.length === 3) {
+                const d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+                return d.getDay() === 2;
+            }
+        }
+        return false;
+    }
+
     function renderCharts(data) {
         const formatMoney = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(val);
 
@@ -432,6 +450,41 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById("total-receipts").textContent = formatMoney(data.total_receipts);
         document.getElementById("total-inflow").textContent = formatMoney(totalInflowVal);
 
+        let maxSale = 0, maxSaleDate = '-';
+        let maxRect = 0, maxRectDate = '-';
+        let maxInflow = 0, maxInflowDate = '-';
+
+        const salesLabels = [];
+        const sData = [];
+        const commonLabels = [];
+        const rData = [];
+        const iData = [];
+
+        (data.timeline || []).forEach(day => {
+            const label = day.display_date ? day.display_date.substring(0, 5) : '';
+            const salesVal = parseFloat(day.sales || 0);
+            const rectVal = parseFloat(day.receipts || 0);
+            const infVal = parseFloat(day.inflow || (rectVal + (parseFloat(day.payments) || 0)));
+
+            if (salesVal > maxSale) { maxSale = salesVal; maxSaleDate = day.display_date; }
+            if (rectVal > maxRect) { maxRect = rectVal; maxRectDate = day.display_date; }
+            if (infVal > maxInflow) { maxInflow = infVal; maxInflowDate = day.display_date; }
+
+            // Only in the sales graph: skip Tuesday if sales < 30k
+            const isTue = isTuesday(day);
+            const skipTuesdayForSales = isTue && (salesVal < 30000);
+
+            if (!skipTuesdayForSales) {
+                salesLabels.push(label);
+                sData.push(salesVal);
+            }
+
+            commonLabels.push(label);
+            rData.push(rectVal);
+            iData.push(infVal);
+        });
+
+        // Statistics: show full numbers for all days
         const activeDaysCount = data.timeline ? data.timeline.length : 0;
         const avgSales = activeDaysCount > 0 ? (data.total_sales / activeDaysCount) : 0;
         const avgReceipts = activeDaysCount > 0 ? (data.total_receipts / activeDaysCount) : 0;
@@ -441,35 +494,13 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById("receipts-avg-text").textContent = `Average: ${formatMoney(avgReceipts)}/day (${activeDaysCount} active days)`;
         document.getElementById("inflow-avg-text").textContent = `Average: ${formatMoney(avgInflow)}/day (${activeDaysCount} active days)`;
 
-        let maxSale = 0, maxSaleDate = '-';
-        let maxRect = 0, maxRectDate = '-';
-        let maxInflow = 0, maxInflowDate = '-';
-
-        const labels = [];
-        const sData = [];
-        const rData = [];
-        const iData = [];
-
-        data.timeline.forEach(day => {
-            labels.push(day.display_date.substring(0, 5));
-            sData.push(day.sales);
-            rData.push(day.receipts);
-            
-            const infVal = day.inflow || (day.receipts + (day.payments || 0));
-            iData.push(infVal);
-
-            if (day.sales > maxSale) { maxSale = day.sales; maxSaleDate = day.display_date; }
-            if (day.receipts > maxRect) { maxRect = day.receipts; maxRectDate = day.display_date; }
-            if (infVal > maxInflow) { maxInflow = infVal; maxInflowDate = day.display_date; }
-        });
-
         document.getElementById("sales-peak-sub").textContent = maxSale > 0 ? `Peak: ${formatMoney(maxSale)} on ${maxSaleDate}` : 'No sales';
         document.getElementById("receipts-peak-sub").textContent = maxRect > 0 ? `Peak: ${formatMoney(maxRect)} on ${maxRectDate}` : 'No receipts';
         document.getElementById("inflow-peak-sub").textContent = maxInflow > 0 ? `Peak: ${formatMoney(maxInflow)} on ${maxInflowDate}` : 'No inflow';
 
         // 1. Sales Update
         salesChart.config.type = currentSalesType;
-        salesChart.data.labels = labels;
+        salesChart.data.labels = salesLabels;
         salesChart.data.datasets[0].data = sData;
         salesChart.data.datasets[0].backgroundColor = currentSalesType === 'bar' ? '#10b981' : gradSales;
         salesChart.data.datasets[0].borderRadius = currentSalesType === 'bar' ? 4 : 0;
@@ -477,7 +508,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // 2. Receipts Update
         receiptsChart.config.type = currentReceiptsType;
-        receiptsChart.data.labels = labels;
+        receiptsChart.data.labels = commonLabels;
         receiptsChart.data.datasets[0].data = rData;
         receiptsChart.data.datasets[0].backgroundColor = currentReceiptsType === 'bar' ? '#8b5cf6' : gradReceipts;
         receiptsChart.data.datasets[0].borderRadius = currentReceiptsType === 'bar' ? 4 : 0;
@@ -485,7 +516,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // 3. Inflow Update
         inflowChart.config.type = currentInflowType;
-        inflowChart.data.labels = labels;
+        inflowChart.data.labels = commonLabels;
         inflowChart.data.datasets[0].data = iData;
         inflowChart.data.datasets[0].backgroundColor = currentInflowType === 'bar' ? '#0284c7' : gradInflow;
         inflowChart.data.datasets[0].borderRadius = currentInflowType === 'bar' ? 4 : 0;
